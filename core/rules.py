@@ -174,7 +174,10 @@ def evaluate(inv: InvoiceExtraction, snap: Snapshot, policy: dict, *, verificati
     res = EvalResult(F)
 
     def add(*a, **k):
-        F.append(Finding(*a, **k))
+        f = Finding(*a, **k)
+        # a passed / not-applicable check must never carry a problem code (guards against mixed-up arguments)
+        assert f.result in ("WARN", "FAIL") or f.reason_code is None, f"{f.check_id}: reason code on a {f.result} finding"
+        F.append(f)
 
     def dscore(i, po, line):
         if semantic_scores and (i, po, line["line_no"]) in semantic_scores:
@@ -308,7 +311,7 @@ def evaluate(inv: InvoiceExtraction, snap: Snapshot, policy: dict, *, verificati
             f"Invoice account {mask_account(digits(inv.bank_account))} differs from the account on file {mask_account(vendor['bank_account'])}. Verify by phone using the number on file - not one from the invoice.",
             "BANK_CHANGED", mask_account(vendor["bank_account"]), mask_account(digits(inv.bank_account)))
     else:
-        add("BANK", "Vendor", "Bank account check", "PASS", f"Matches the account on file ({mask_account(vendor['bank_account'])}).", mask_account(vendor["bank_account"]), mask_account(digits(inv.bank_account)))
+        add("BANK", "Vendor", "Bank account check", "PASS", f"Matches the account on file ({mask_account(vendor['bank_account'])}).", expected=mask_account(vendor["bank_account"]), actual=mask_account(digits(inv.bank_account)))
 
     # ======================= Duplicate (locked) =======================
     num = norm_invoice_number(inv.invoice_number)
@@ -363,7 +366,7 @@ def evaluate(inv: InvoiceExtraction, snap: Snapshot, policy: dict, *, verificati
             elif po["currency"] and inv.currency and po["currency"] != inv.currency.upper():
                 add("PO_MATCH", "Purchase order", "PO matching", "WARN", f"Invoice is in {inv.currency}, the PO is in {po['currency']}.", "CURRENCY_MISMATCH", po["currency"], inv.currency)
             else:
-                add("PO_MATCH", "Purchase order", "PO matching", "PASS", f"Matches {po['po_number']} (open, {po['po_type'].lower()}).", po["po_number"], inv.po_reference)
+                add("PO_MATCH", "Purchase order", "PO matching", "PASS", f"Matches {po['po_number']} (open, {po['po_type'].lower()}).", expected=po["po_number"], actual=inv.po_reference)
         elif vendor:
             # infer: score each open PO of this vendor on descriptions, amount and dates (Python arithmetic)
             cands = []

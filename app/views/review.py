@@ -190,20 +190,30 @@ with right:
         else:
             if "approve" in acts and "BANK_CHANGED" in (inv["reason_codes"] or ""):
                 st.warning("Bank account differs from the record. Only approve after calling the vendor on the number **on file**.", icon="📞")
-            r1, r2 = st.columns([1.4, 1])
-            preset = r1.selectbox("Reason for decision *", ["— choose or type below —"] + decision.REVIEW_REASONS["approve"] + decision.REVIEW_REASONS["reject"])
-            note = r2.text_input("Or your own reason", placeholder="e.g. confirmed with Ravi in procurement")
-            reason = note.strip() or ("" if preset.startswith("—") else preset)
-            b = st.columns(3)
-            for i, a in enumerate(["approve", "reject"]):
-                if a in acts and b[i].button(a.title(), type="primary" if a == "approve" else "secondary", use_container_width=True,
-                                             icon=":material/check:" if a == "approve" else ":material/close:"):
-                    try:
-                        new = decision.reviewer_action(conn, iid, a, reason)
-                        st.toast(f"Saved: {LABEL[new]}. Recorded in the audit trail.", icon="✅")
-                        st.rerun()
-                    except (ValueError, PermissionError) as e:
-                        st.error(str(e))
+            # One dropdown: every allowed choice says what it does (approve / reject) and why. Then one Submit.
+            ICON_A = {"approve": "✅ Approve", "reject": "⛔ Reject"}
+            opts = [(a, r) for a in ("approve", "reject") if a in acts for r in decision.REVIEW_REASONS[a]]
+            opts += [(a, None) for a in ("approve", "reject") if a in acts]  # "other reason" per action
+            labels = ["— choose a decision —"] + [f"{ICON_A[a]} — {r}" if r else f"{ICON_A[a]} — other reason (type below)" for a, r in opts]
+            pick = st.selectbox("Decision and reason *", labels, key=f"dec_{iid}")
+            chosen = opts[labels.index(pick) - 1] if pick != labels[0] else None
+            note = st.text_input("Your own reason / note" + (" *" if chosen and chosen[1] is None else " (optional)"),
+                                 placeholder="e.g. confirmed with Ravi in procurement", key=f"note_{iid}")
+            if chosen:
+                a, r = chosen
+                eff = "**Ready to Pay** (PO amount committed)" if a == "approve" else "**Blocked** (PO amount released)"
+                st.caption(f"On submit this invoice becomes {eff}, and your reason is saved in the audit trail.")
+            if st.button("Submit decision", type="primary", icon=":material/send:", disabled=chosen is None, key=f"submit_{iid}"):
+                a, r = chosen
+                reason = (r + (f" - {note.strip()}" if note.strip() else "")) if r else note.strip()
+                try:
+                    new = decision.reviewer_action(conn, iid, a, reason)
+                    for k in (f"dec_{iid}", f"note_{iid}"):
+                        st.session_state.pop(k, None)
+                    st.toast(f"Saved: {LABEL[new]}. Recorded in the audit trail.", icon="✅")
+                    st.rerun()
+                except (ValueError, PermissionError) as e:
+                    st.error(str(e))
 
 with st.expander("✨ Invoice Helper for this invoice"):
     helper_panel.render(conn, iid, "rv")
