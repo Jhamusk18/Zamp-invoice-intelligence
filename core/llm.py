@@ -84,7 +84,41 @@ def _is_rate_limit(e):
     return "429" in t or "resource_exhausted" in t or "rate limit" in t or "quota" in t
 
 
+def _is_transient(e):
+    """Worth waiting and trying again: rate limits, 'model overloaded' (503), server hiccups, timeouts."""
+    t = str(e).lower()
+    return _is_rate_limit(e) or any(k in t for k in ("503", "unavailable", "high demand", "overloaded", "500", "internal",
+                                                     "deadline", "timeout", "timed out", "connection"))
+
+
+def _friendly(e):
+    t = str(e).lower()
+    if _is_rate_limit(e):
+        return "free-tier rate limit reached - wait a minute, then click Retry"
+    if any(k in t for k in ("503", "unavailable", "high demand", "overloaded")):
+        return "Google's AI service is overloaded right now - wait a minute, then click Retry"
+    if "not found" in t or "404" in t:
+        return "model not found - check GEMINI_MODEL_PRIMARY / GEMINI_MODEL_RETRY in Secrets"
+    if "api key" in t or "permission" in t or "401" in t or "403" in t:
+        return "the API key was refused - check GEMINI_API_KEY in Secrets"
+    return str(e)[:200]
+
+
 def _invoke_structured(conn, cache_key, model, schema, messages, use_cache=True):
+    """Calls `model`; if Google keeps saying it's busy, falls back to the other configured Gemini model once.
+    Returns (parsed_dict, meta)."""
+    try:
+        return _invoke_one(conn, cache_key, model, schema, messages, use_cache)
+    except TechnicalError as e:
+        other = [m for m in models().values() if m != model]
+        if other and _is_transient(e.__cause__ or e):
+            out = _invoke_one(conn, cache_key, other[0], schema, messages, use_cache)
+            out[1]["fallback_from"] = model
+            return out
+        raise
+
+
+def _invoke_one(conn, cache_key, model, schema, messages, use_cache=True):
     """Returns (parsed_dict, meta). meta: model, cached, tokens, seconds, prompt_version."""
     if use_cache:
         hit = _cache_get(conn, cache_key)
@@ -94,7 +128,7 @@ def _invoke_structured(conn, cache_key, model, schema, messages, use_cache=True)
     t0 = time.time()
     runnable = _chat(model).with_structured_output(schema, include_raw=True)
     out, last_err = None, None
-    for attempt in range(4):
+    for attempt in range(3):
         with _call_lock:  # one call at a time, at least MIN_GAP_SECONDS apart
             wait = MIN_GAP_SECONDS - (time.time() - _last_call[0])
             if wait > 0:
@@ -108,12 +142,11 @@ def _invoke_structured(conn, cache_key, model, schema, messages, use_cache=True)
                 _last_call[0] = time.time()
         if last_err is None:
             break
-        if not _is_rate_limit(last_err) or attempt == 3:
+        if not _is_transient(last_err) or attempt == 2:
             break
-        time.sleep(4 * 2 ** attempt)  # 4, 8, 16 s backoff on rate limits
-    if last_err is not None:  # network, quota, model not found ... -> technical failure, never a business finding
-        why = "rate limit / quota reached - wait a minute and use Retry" if _is_rate_limit(last_err) else str(last_err)[:200]
-        raise TechnicalError(f"AI service error ({model}): {why}") from last_err
+        time.sleep(3 * 2 ** attempt)  # 3 s, then 6 s; after that switch to the other model
+    if last_err is not None:  # network, quota, overload, model not found ... -> technical failure, never a business finding
+        raise TechnicalError(f"AI service error ({model}): {_friendly(last_err)}") from last_err
     if out.get("parsing_error") or out.get("parsed") is None:
         raise TechnicalError(f"AI returned an answer that doesn't fit the invoice schema ({model}).")
     parsed = out["parsed"].model_dump() if hasattr(out["parsed"], "model_dump") else out["parsed"]

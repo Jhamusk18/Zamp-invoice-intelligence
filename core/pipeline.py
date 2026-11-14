@@ -120,7 +120,8 @@ def run(iid: int, conn=None, extractor=None, use_ai_text: bool = True, use_cache
             src = f"Scanned image: OCR read {len(facts.text):,} characters"
         else:
             src = f"Text layer ({facts.page_count} page{'s' if facts.page_count > 1 else ''})"
-        _stage(conn, iid, 2, "DONE", f"{src} · fields read by {m1['model']}{' (cached)' if m1.get('cached') else ''}")
+        fb = f" (first model {m1['fallback_from']} was busy)" if m1.get("fallback_from") else ""
+        _stage(conn, iid, 2, "DONE", f"{src} · fields read by {m1['model']}{' (cached)' if m1.get('cached') else ''}{fb}")
 
         # ---- 3. Fields Validated
         stage_no = 3
