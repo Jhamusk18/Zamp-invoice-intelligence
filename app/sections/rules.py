@@ -13,7 +13,7 @@ def render():
     ver, cur = policy.active(conn)
     hist = policy.history(conn)
     st.caption("Set the key values and validation rules used to check invoices.")
-    st.markdown(f"<span class='z-badge APPROVED'>Saved · policy v{ver}</span> <span class='z-muted'>last changed "
+    st.markdown(f"<span class='z-pill APPROVED'><span class='dot'></span>Saved · policy v{ver}</span> <span class='z-muted'>last changed "
                 f"{datetime.fromtimestamp(hist[0]['created_at']):%d %b %Y %H:%M} by {hist[0]['created_by']}</span>", unsafe_allow_html=True)
     st.write("")
 

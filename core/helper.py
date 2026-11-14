@@ -12,14 +12,15 @@ from core import queries as q
 from core.decision import LABEL
 from core.money import inr, mask_account
 
-MENU = {
-    "whats_on": "What's on this invoice?",
-    "decided": "What was decided?",
+MENU = {  # order = order shown (most useful first)
+    "decided": "Why was this held?",
     "next": "What should I do next?",
+    "whats_on": "What's on this invoice?",
     "compare": "Compare with our order",
     "source": "Where did this come from?",
     "start": "Start over",
 }
+DECIDED_LABEL = {"APPROVED": "Why is it ready to pay?", "FLAGGED": "Why was this held?", "REJECTED": "Why was it blocked?"}
 OUT_OF_SCOPE = "I can only help with this invoice's details and decision. Try one of the options below."
 
 KEYWORDS = [  # free-typed text -> menu item (no AI involved)
@@ -37,12 +38,42 @@ def has_comparison(conn, iid):
     return bool(inv and inv["po_number"])
 
 
+def label(inv, key):
+    return DECIDED_LABEL.get(inv["status"], MENU[key]) if key == "decided" else MENU[key]
+
+
 def menu_items(conn, iid):
-    return [(k, v) for k, v in MENU.items() if k != "compare" or has_comparison(conn, iid)]
+    inv = q.invoice(conn, iid)
+    return [(k, label(inv, k)) for k in MENU if k != "start" and (k != "compare" or has_comparison(conn, iid))]
+
+
+def summary_sentence(inv):
+    """One sentence that says the result, used as the helper's first message."""
+    r = (inv["primary_reason"] or "").rstrip(".")
+    r = r[:1].lower() + r[1:] if r and not r[:2].isupper() else r
+    if inv["status"] == "APPROVED":
+        return (f"**Ready to Pay** - approved by a reviewer. Want to see what was checked?" if inv["decided_by"] == "reviewer"
+                else "**Ready to Pay** - every check passed. Want to see what was checked?")
+    head = {"FLAGGED": "Needs attention", "REJECTED": "Blocked"}[inv["status"]]
+    return f"**{head}**: {r}. Want to see why?"
+
+
+def next_step(conn, iid):
+    """One sentence for the verdict card: the most important thing to do now."""
+    inv = q.invoice(conn, iid)
+    if not inv or inv["run_state"] != "DONE":
+        return None
+    if inv["decided_by"] == "reviewer":
+        return None
+    if inv["status"] == "APPROVED":
+        return "Nothing - it can be paid. You can still pull it back with Reject if you learn something new."
+    codes = json.loads(inv["reason_codes"] or "[]")
+    first = next((c for c in codes if c in NEXT_STEP), None)
+    return NEXT_STEP[first].replace("**", "") if first else "Review the checks below, then approve or reject with a reason."
 
 
 def greeting(inv):
-    return f"Hi! I'm looking at invoice **{inv['invoice_number'] or inv['filename']}** from **{inv['vendor_name'] or 'an unknown vendor'}**. What would you like to know?"
+    return f"I've checked invoice **{inv['invoice_number'] or inv['filename']}** from **{inv['vendor_name'] or 'an unknown vendor'}**. " + summary_sentence(inv)
 
 
 def ensure_started(conn, iid):
@@ -66,7 +97,7 @@ def ask(conn, iid, key=None, text=None):
             _save(conn, iid, "assistant", OUT_OF_SCOPE)
             return OUT_OF_SCOPE
     else:
-        _save(conn, iid, "user", MENU[key])
+        _save(conn, iid, "user", label(q.invoice(conn, iid), key))
     if key == "start":
         conn.execute("DELETE FROM chat_messages WHERE invoice_id=?", (iid,))
         ensure_started(conn, iid)
@@ -100,13 +131,12 @@ def _decided(conn, iid):
     i = q.invoice(conn, iid)
     fs = q.findings(conn, iid)
     who = "by the system" if i["decided_by"] == "system" else "by a reviewer"
-    t = [f"**{LABEL[i['status']]}** ({who}, policy v{i['policy_version']}).", f"Main reason: {i['primary_reason']}", ""]
+    t = [f"**{LABEL[i['status']]}** - decided {who} under policy v{i['policy_version']}.", ""]
     bad = [f for f in fs if f["result"] in ("WARN", "FAIL")]
     if bad:
         t.append("**Needs attention:**")
         for f in bad:
-            ex = f" *(expected {f['expected']}, got {f['actual']})*" if f["expected"] and f["actual"] else ""
-            t.append(f"- {'⛔' if f['result'] == 'FAIL' else '⚠️'} **{f['details'].get('label', f['check_id'])}**: {f['message']}{ex}")
+            t.append(f"- {'⛔' if f['result'] == 'FAIL' else '⚠️'} **{f['details'].get('label', f['check_id'])}**: {f['message']}")
     passed = [f["details"].get("label", f["check_id"]) for f in fs if f["result"] == "PASS"]
     t.append(f"\n**Passed ({len(passed)}):** " + ", ".join(passed))
     return "\n".join(t)

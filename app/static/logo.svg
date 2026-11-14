@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="250" height="40" viewBox="0 0 250 40">
+  <rect x="2" y="6" width="28" height="28" rx="8" fill="#3B82F6"/>
+  <path d="M10 14h12l-12 12h12" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="40" y="27" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="#FFFFFF">Zamp</text>
+  <text x="95" y="27" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="18" font-weight="400" fill="#BFD3FF">AP Assistant</text>
+</svg>

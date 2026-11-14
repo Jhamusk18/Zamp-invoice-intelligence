@@ -4,18 +4,42 @@ import streamlit as st
 
 from app import ui
 from app.sections import assumptions, rules
+from core import seed
 from core.db import rows
 
 conn = ui.conn()
 ME = "Demo Reviewer"
 
 c1, c2 = st.columns([0.12, 1])
-c1.markdown("<div style='width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#6D4AFF,#A78BFA);"
+c1.markdown("<div style='width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#60A5FA);color:#fff;"
             "display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;margin-top:18px'>DR</div>",
             unsafe_allow_html=True)
 with c2:
     st.markdown("# Demo Reviewer")
     st.markdown("<div class='z-sub'>AP Reviewer · Acme Retail India (sample company) · prototype account, no login</div>", unsafe_allow_html=True)
+
+
+
+@st.dialog("Reset demo data?")
+def confirm_reset():
+    st.write("This deletes every uploaded invoice, decision, audit entry, chat, saved rule change and saved AI answer, "
+             "and rebuilds the sample company with its invoice history.")
+    c1, c2 = st.columns(2)
+    if c1.button("Yes, reset", type="primary", use_container_width=True):
+        try:
+            st.session_state.conn.close()
+        except Exception:
+            pass
+        with st.spinner("Rebuilding sample data…"):
+            seed.reset()
+        for k in list(st.session_state.keys()):
+            if k != "pages":
+                del st.session_state[k]
+        st.toast("Demo data reset.", icon="✅")
+        st.rerun()
+    if c2.button("Cancel", use_container_width=True):
+        st.rerun()
+
 
 tab_me, tab_rules, tab_about = st.tabs(["My activity", "Approval rules", "About this prototype"])
 
@@ -30,11 +54,11 @@ with tab_me:
     rj = sum(a["action"] == "REVIEWER_REJECT" for a in acts)
     k = st.columns(3)
     with k[0]:
-        ui.kpi("purple", "Invoices uploaded", str(up), "by you", "⬆️")
+        ui.stat("blue", "Invoices uploaded", up, "by you")
     with k[1]:
-        ui.kpi("green", "Approved by you", str(ap), "with a reason", "✅")
+        ui.stat("green", "Approved by you", ap, "each with a reason")
     with k[2]:
-        ui.kpi("red", "Rejected by you", str(rj), "with a reason", "⛔")
+        ui.stat("red", "Rejected by you", rj, "each with a reason")
     st.write("")
     if not acts:
         st.markdown("<div class='z-card z-muted'>No activity yet. Upload an invoice, or approve / reject one from History.</div>", unsafe_allow_html=True)
@@ -55,3 +79,10 @@ with tab_rules:
 
 with tab_about:
     assumptions.render()
+    st.write("")
+    with st.container(key="card_reset"):
+        c = st.columns([4, 1.3], vertical_alignment="center")
+        c[0].markdown("**Demo data** <span class='z-muted'>· sample company data; history invoices are pre-processed from known values, "
+                      "uploads are read by AI. Reset before a demo to start clean.</span>", unsafe_allow_html=True)
+        if c[1].button("Reset demo data", icon=":material/restart_alt:", use_container_width=True):
+            confirm_reset()

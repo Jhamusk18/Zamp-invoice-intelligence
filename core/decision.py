@@ -79,9 +79,8 @@ def _set_allocation(conn, invoice_id, po_number, amount, state):
 # ------------------------------------------------------------------ human decisions
 
 REVIEW_REASONS = {
-    "approve": ["Verified with vendor by phone (number on file)", "Confirmed suggested PO is correct",
-                "Variance accepted by budget owner", "Approved by authorised approver (above limit)",
-                "Quantity confirmed with warehouse"],
+    "approve": ["Confirmed with vendor (phone number on file)", "Confirmed with budget owner", "Within recurring contract",
+                "Confirmed suggested PO is correct", "Quantity confirmed with warehouse"],
     "reject": ["Duplicate of an invoice already paid", "Vendor could not confirm bank change", "Price not agreed",
                "Goods not received", "Not our order", "Ask vendor for a corrected invoice"],
 }
