@@ -17,6 +17,7 @@ import base64
 import hashlib
 import json
 import os
+import threading
 import time
 
 from pydantic import BaseModel, Field
@@ -25,6 +26,9 @@ from core.document import TechnicalError
 from core.models import InvoiceExtraction
 
 PROMPT_VERSION = "v3"
+MIN_GAP_SECONDS = 2.0      # free tier: space calls out
+_call_lock = threading.Lock()  # one model call at a time across all users/threads of this server
+_last_call = [0.0]
 
 
 def _secret(name, default=None):
@@ -54,7 +58,8 @@ def _chat(model: str):
     if not api_key():
         raise TechnicalError("AI extraction isn't configured: add GEMINI_API_KEY to .streamlit/secrets.toml.")
     from langchain_google_genai import ChatGoogleGenerativeAI
-    return ChatGoogleGenerativeAI(model=model, google_api_key=api_key(), temperature=0, max_retries=2, timeout=60)
+    # retries are handled below (with backoff on rate limits), so the client itself doesn't retry
+    return ChatGoogleGenerativeAI(model=model, google_api_key=api_key(), temperature=0, max_retries=0, timeout=60)
 
 
 # ------------------------------------------------------------------ cache
@@ -64,36 +69,65 @@ def _cache_get(conn, key):
     return (json.loads(r[0]), r[1] or 0, r[2] or 0) if r else None
 
 
-def _cache_put(conn, key, model, response, tin, tout):
-    conn.execute("INSERT OR REPLACE INTO llm_cache (cache_key, model, response, created_at, input_tokens, output_tokens) VALUES (?,?,?,?,?,?)",
-                 (key, model, json.dumps(response), time.time(), tin, tout))
+def _cache_put(conn, key, model, response, tin, tout, raw=None):
+    """Only successful, schema-valid answers are ever cached."""
+    conn.execute("INSERT OR REPLACE INTO llm_cache (cache_key, model, response, created_at, input_tokens, output_tokens, raw, prompt_version) VALUES (?,?,?,?,?,?,?,?)",
+                 (key, model, json.dumps(response), time.time(), tin, tout, raw, PROMPT_VERSION))
 
 
 def _key(*parts):
     return hashlib.sha256("|".join(map(str, parts + (PROMPT_VERSION,))).encode()).hexdigest()
 
 
+def _is_rate_limit(e):
+    t = str(e).lower()
+    return "429" in t or "resource_exhausted" in t or "rate limit" in t or "quota" in t
+
+
 def _invoke_structured(conn, cache_key, model, schema, messages, use_cache=True):
-    """Returns (parsed_dict, meta). meta: model, cached, tokens, seconds."""
+    """Returns (parsed_dict, meta). meta: model, cached, tokens, seconds, prompt_version."""
     if use_cache:
         hit = _cache_get(conn, cache_key)
         if hit:
-            return hit[0], {"model": model, "cached": True, "input_tokens": hit[1], "output_tokens": hit[2], "seconds": 0}
+            return hit[0], {"model": model, "cached": True, "input_tokens": hit[1], "output_tokens": hit[2], "seconds": 0,
+                            "prompt_version": PROMPT_VERSION}
     t0 = time.time()
-    try:
-        runnable = _chat(model).with_structured_output(schema, include_raw=True)
-        out = runnable.invoke(messages)
-    except TechnicalError:
-        raise
-    except Exception as e:  # network, quota, model not found ... -> technical failure, never a business finding
-        raise TechnicalError(f"AI service error ({model}): {str(e)[:200]}") from e
+    runnable = _chat(model).with_structured_output(schema, include_raw=True)
+    out, last_err = None, None
+    for attempt in range(4):
+        with _call_lock:  # one call at a time, at least MIN_GAP_SECONDS apart
+            wait = MIN_GAP_SECONDS - (time.time() - _last_call[0])
+            if wait > 0:
+                time.sleep(wait)
+            try:
+                out = runnable.invoke(messages)
+                last_err = None
+            except Exception as e:
+                last_err = e
+            finally:
+                _last_call[0] = time.time()
+        if last_err is None:
+            break
+        if not _is_rate_limit(last_err) or attempt == 3:
+            break
+        time.sleep(4 * 2 ** attempt)  # 4, 8, 16 s backoff on rate limits
+    if last_err is not None:  # network, quota, model not found ... -> technical failure, never a business finding
+        why = "rate limit / quota reached - wait a minute and use Retry" if _is_rate_limit(last_err) else str(last_err)[:200]
+        raise TechnicalError(f"AI service error ({model}): {why}") from last_err
     if out.get("parsing_error") or out.get("parsed") is None:
         raise TechnicalError(f"AI returned an answer that doesn't fit the invoice schema ({model}).")
     parsed = out["parsed"].model_dump() if hasattr(out["parsed"], "model_dump") else out["parsed"]
-    usage = getattr(out.get("raw"), "usage_metadata", None) or {}
+    raw_msg = out.get("raw")
+    usage = getattr(raw_msg, "usage_metadata", None) or {}
     tin, tout = usage.get("input_tokens", 0), usage.get("output_tokens", 0)
-    _cache_put(conn, cache_key, model, parsed, tin, tout)
-    return parsed, {"model": model, "cached": False, "input_tokens": tin, "output_tokens": tout, "seconds": round(time.time() - t0, 2)}
+    raw_text = None
+    try:
+        raw_text = json.dumps({"content": raw_msg.content, "tool_calls": getattr(raw_msg, "tool_calls", None)}, default=str)[:20000]
+    except Exception:
+        pass
+    _cache_put(conn, cache_key, model, parsed, tin, tout, raw_text)
+    return parsed, {"model": model, "cached": False, "input_tokens": tin, "output_tokens": tout,
+                    "seconds": round(time.time() - t0, 2), "prompt_version": PROMPT_VERSION}
 
 
 # ------------------------------------------------------------------ 1. extraction

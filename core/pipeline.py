@@ -114,8 +114,12 @@ def run(iid: int, conn=None, extractor=None, use_ai_text: bool = True, use_cache
         _stage(conn, iid, 2, "RUNNING", ("Scanned image → OCR" if facts.is_scanned else "Text layer found") + " · AI reading fields…")
         inv1, m1 = extractor(conn, h, facts, "primary")
         meta["reads"].append(m1)
-        src = (f"Scanned image: OCR read {len(facts.text):,} characters" if facts.is_scanned
-               else f"Text layer ({facts.page_count} page{'s' if facts.page_count > 1 else ''})")
+        if facts.text_source == "NONE":
+            src = "Scanned image: OCR not available on this server, so values can't be verified"
+        elif facts.is_scanned:
+            src = f"Scanned image: OCR read {len(facts.text):,} characters"
+        else:
+            src = f"Text layer ({facts.page_count} page{'s' if facts.page_count > 1 else ''})"
         _stage(conn, iid, 2, "DONE", f"{src} · fields read by {m1['model']}{' (cached)' if m1.get('cached') else ''}")
 
         # ---- 3. Fields Validated
@@ -223,6 +227,8 @@ def _needs_retry(inv, ver):
     if not _arith_ok(inv):
         return "Numbers didn't add up"
     bad = [f for f in CRITICAL_FIELDS if ver.get(f) == "NONE"]
+    if bad and all(v == "NONE" for v in ver.values()) and ver:
+        return None  # nothing can be verified at all (no OCR): a second read can't fix that, don't spend quota
     if bad:
         return "Couldn't confirm " + ", ".join(b.replace("_", " ") for b in bad) + " in the document"
     return None

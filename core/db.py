@@ -104,7 +104,9 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 
 CREATE TABLE IF NOT EXISTS llm_cache (
   cache_key TEXT PRIMARY KEY, model TEXT, response TEXT, created_at REAL,
-  input_tokens INTEGER, output_tokens INTEGER);
+  input_tokens INTEGER, output_tokens INTEGER,
+  raw TEXT,                 -- raw model reply, for debugging and audit
+  prompt_version TEXT);
 
 CREATE TABLE IF NOT EXISTS eval_runs (
   id INTEGER PRIMARY KEY AUTOINCREMENT, started_at REAL, finished_at REAL, split TEXT, policy_version INTEGER,

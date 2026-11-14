@@ -201,7 +201,9 @@ def evaluate(inv: InvoiceExtraction, snap: Snapshot, policy: dict, *, verificati
     else:
         unver = [f for f in CRITICAL_FIELDS if inv.value(f) not in (None, "") and verification.get(f) == "NONE"]
         src = "OCR text" if "OCR" in verification.values() else "document text"
-        if unver:
+        if unver and all(v == "NONE" for v in verification.values()):
+            add("EVIDENCE", "Document", "Evidence check", "WARN", "Scanned invoice and no OCR text to check against, so no value could be confirmed. A person must compare the key values with the PDF.", "UNVERIFIED_FIELD", details={"fields": unver})
+        elif unver:
             add("EVIDENCE", "Document", "Evidence check", "WARN", "Could not confirm in the document: " + ", ".join(u.replace("_", " ") for u in unver) + ". A person must check these against the PDF.", "UNVERIFIED_FIELD", details={"fields": unver})
         else:
             add("EVIDENCE", "Document", "Evidence check", "PASS", f"Every key value was found in the {src}.")
@@ -259,11 +261,24 @@ def evaluate(inv: InvoiceExtraction, snap: Snapshot, policy: dict, *, verificati
     else:
         scored = sorted(((name_score(inv.vendor_name, v), v) for v in snap.vendors), key=lambda x: -x[0]) if inv.vendor_name else []
         best_s, best_v = scored[0] if scored else (0, None)
-        if best_v and best_s >= threshold:
+        # A GSTIN we can trust (confirmed in the document, or structured input) that belongs to NO approved vendor means a
+        # different legal entity - however close the name. That's impersonation, not a match.
+        gstin_trusted = bool(g) and GSTIN_RE.match(g) and (verification is None or verification.get("vendor_gstin") in ("TEXT", "OCR"))
+        if best_v and best_s >= 70 and gstin_trusted:
+            add("VENDOR", "Vendor", "Vendor check", "FAIL",
+                f"\"{inv.vendor_name}\" looks like approved vendor {best_v['name']} ({best_s:.0f}% similar), but GSTIN {g} belongs to a "
+                f"different company (on file: {best_v['gstin']}). Possible impersonation - don't pay.",
+                "VENDOR_LOOKALIKE", best_v["gstin"], g, details={"lookalike_of": best_v["vendor_id"]})
+            best_v = None
+        elif best_v and best_s >= threshold:
             vendor = best_v
             add("VENDOR", "Vendor", "Vendor check", "PASS", f"Matched {vendor['name']} by name ({best_s:.0f}% similar).", expected=vendor["name"], actual=inv.vendor_name)
         elif best_v and best_s >= 70:
-            add("VENDOR", "Vendor", "Vendor check", "WARN", f"\"{inv.vendor_name}\" looks like approved vendor {best_v['name']} ({best_s:.0f}% similar) but the GSTIN doesn't match. Possible impersonation.", "VENDOR_LOOKALIKE", best_v["name"], inv.vendor_name, details={"lookalike_of": best_v["vendor_id"]})
+            # similar name, no trustworthy GSTIN (missing, or not confirmed in the document): might be a typo or misread -> a person
+            add("VENDOR", "Vendor", "Vendor check", "WARN",
+                f"\"{inv.vendor_name}\" looks like approved vendor {best_v['name']} ({best_s:.0f}% similar), but there's no confirmed "
+                "GSTIN to prove it's the same company. Check before paying.",
+                "VENDOR_LOOKALIKE", best_v["name"], inv.vendor_name, details={"lookalike_of": best_v["vendor_id"]})
         else:
             add("VENDOR", "Vendor", "Vendor check", "FAIL", f"\"{inv.vendor_name or 'Unknown'}\" is not on the approved vendor list. Route to vendor onboarding.", "UNKNOWN_VENDOR", "An approved vendor", inv.vendor_name)
     if vendor and vendor["status"] != "ACTIVE":
@@ -313,13 +328,16 @@ def evaluate(inv: InvoiceExtraction, snap: Snapshot, policy: dict, *, verificati
             dp = parse_date(p["invoice_date"])
             date_ok = d0 and dp and abs((d0 - dp).days) <= policy["fuzzy_dup_days"]
             num_sim = fuzz.ratio(num or "", p["invoice_number_norm"] or "") >= 85
-            if (amt_ok and date_ok) or (num_sim and amt_ok):
-                fuzzy = p
+            # Same amount ALONE is normal (monthly rent, recurring freight). Suspect a duplicate only when the number is
+            # also similar (INV-1001 vs INV-1001A), or the same amount arrives within a few days.
+            if amt_ok and (num_sim or date_ok):
+                fuzzy = (p, "similar invoice number" if num_sim else f"dated within {policy['fuzzy_dup_days']} days")
                 break
         if fuzzy:
+            p, why = fuzzy
             add("DUPLICATE", "Duplicate", "Duplicate check", "WARN",
-                f"Looks like {fuzzy['invoice_number']}: same vendor, amount within {policy['fuzzy_dup_amount_pct']:g}% and dated within {policy['fuzzy_dup_days']} days, but a different number.",
-                "DUPLICATE_SUSPECTED", details={"duplicate_of": fuzzy["id"]})
+                f"Looks like {p['invoice_number']}: same vendor, amount within {policy['fuzzy_dup_amount_pct']:g}% and {why}, but a different number.",
+                "DUPLICATE_SUSPECTED", details={"duplicate_of": p["id"]})
         else:
             add("DUPLICATE", "Duplicate", "Duplicate check", "PASS", "No earlier invoice with this number, or with the same amount and a close date, from this vendor.")
 

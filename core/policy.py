@@ -17,7 +17,7 @@ DEFAULT_POLICY = {
     "auto_approve_limit": 100000.0,  # invoice total above this always needs a person
     "vendor_match": "medium",      # strict | medium | flexible
     "fuzzy_dup_amount_pct": 1.0,
-    "fuzzy_dup_days": 30,
+    "fuzzy_dup_days": 7,
     "math_tolerance": 1.0,         # rupees of rounding allowed in arithmetic checks
     "rules": {
         "duplicate": True,       # locked

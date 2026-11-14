@@ -26,7 +26,7 @@ class DocFacts:
     page_count: int
     is_scanned: bool
     text: str                      # text layer, or OCR text for scans
-    text_source: str               # 'TEXT' or 'OCR'
+    text_source: str               # 'TEXT', 'OCR', or 'NONE' (scan, and no OCR engine on this server)
     hidden_text: list = field(default_factory=list)
     page_images_png: list = field(default_factory=list)  # for the vision model on scans
 
@@ -63,11 +63,13 @@ def read_document(data: bytes, ocr: bool = True) -> DocFacts:
     if is_scanned:
         for p in doc:
             images.append(p.get_pixmap(dpi=200).tobytes("png"))
+        source = "OCR"
         if ocr:
             text = ocr_pages(images)
-            if len(re.sub(r"\s", "", text)) < MIN_TEXT_CHARS:
+            if text is None:  # no OCR engine installed: the AI can still read the image, but nothing can be verified
+                text, source = "", "NONE"
+            elif len(re.sub(r"\s", "", text)) < MIN_TEXT_CHARS:
                 raise TechnicalError("The scan is unreadable: OCR found almost no text.")
-        source = "OCR"
     else:
         source = "TEXT"
     return DocFacts(doc.page_count, is_scanned, text, source, hidden, images)
@@ -80,8 +82,8 @@ def ocr_pages(images_png: list[bytes]) -> str:
     from PIL import Image
     try:
         return "\n".join(pytesseract.image_to_string(Image.open(io.BytesIO(b)), config="--psm 6") for b in images_png)
-    except pytesseract.TesseractNotFoundError as e:
-        raise TechnicalError("OCR engine (Tesseract) is not installed on the server.") from e
+    except pytesseract.TesseractNotFoundError:
+        return None  # caller falls back: AI vision reads it, every key value is marked 'not verified' -> a person checks
 
 
 def find_hidden_text(doc) -> list[dict]:
@@ -150,7 +152,7 @@ def verify_evidence(value, snippet: str | None, doc_text: str, source: str) -> s
       1. the snippet appears in the document (exactly for a text layer; fuzzy for OCR, which makes small errors)
       2. the extracted value appears inside the snippet (so the AI can't quote one thing and extract another)
     """
-    if value is None or value == "":
+    if value is None or value == "" or source == "NONE":
         return "NONE"
     doc_n = _norm(doc_text)
     snip_n = _norm(snippet or "")
