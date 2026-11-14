@@ -293,6 +293,7 @@ def truth_extractor(truth: InvoiceExtraction):
                     hit = best
             if hit:
                 ev.append({"field": f, "snippet": hit.strip()})
-        out = truth.model_copy(update={"evidence": [e for e in ev]})
+        from core.models import Evidence
+        out = truth.model_copy(update={"evidence": [Evidence(**e) for e in ev]})
         return InvoiceExtraction.model_validate(out.model_dump()), {"model": "ground truth (sample data)", "cached": False}
     return ex
