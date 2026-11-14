@@ -28,7 +28,7 @@ Regenerate the sample PDFs with `python scripts/make_sample_invoices.py`. Run te
 ## Screens
 
 - **Welcome** - what it does, how it works, FAQs
-- **Upload** - drop a PDF (or try a sample invoice), watch 5 live steps, get the decision, ask the Invoice Helper, open **Review**
+- **Upload** - drop a PDF, watch 5 live steps, get the decision, ask the Invoice Helper, open **Review**
 - **History** - every invoice with totals per status, search, filters (status, vendor, date) and sorting; click a row for **Review**
 - **Profile** - your approvals/rejections, the approval rules (with "see what would change"), and the prototype's assumptions
 - **Review** (opens from Upload or History) - original PDF, extracted values with their source, every check, PO match and money, vendor email draft, audit trail, Approve/Reject with a reason

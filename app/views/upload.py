@@ -4,7 +4,7 @@ from datetime import datetime
 import streamlit as st
 
 from app import helper_panel, ui
-from core import llm, pipeline, queries as q, seed
+from core import llm, pipeline, queries as q
 from core.document import TechnicalError
 
 conn = ui.conn()
@@ -33,22 +33,6 @@ with left:
                 except TechnicalError as e:
                     st.error(f"Couldn't accept this file: {e}", icon="🚫")
 
-    # ---- Try a sample invoice (the prepared demo set: 1 happy path + edge cases)
-    samples = [s for s in seed.specs() if s["role"] == "demo"]
-    st.markdown("<div class='z-muted' style='margin:6px 0 4px'>Try a sample invoice</div>", unsafe_allow_html=True)
-    SHORT = {"D1": "✅ Happy path", "D2": "📠 Scan, no PO", "D3": "🏦 Bank changed", "D4": "📦 Short receipt",
-             "D5": "🧾 Line prices off", "X1": "♊ Duplicate", "X2": "✂️ Split PO", "X3": "➗ Math error"}
-    cols = st.columns(4)
-    for n, s in enumerate(samples):
-        if cols[n % 4].button(SHORT.get(s["key"][:2], s.get("title", s["key"])), key=f"sample_{s['key']}", help=s.get("story"), use_container_width=True,
-                              type="secondary"):
-            try:
-                iid, seen = pipeline.submit(conn, (seed.PDF_DIR / f"{s['key']}.pdf").read_bytes(), f"{s['key']}.pdf")
-                st.session_state.current_id, st.session_state.seen_msg = iid, seen
-                st.rerun()
-            except TechnicalError as e:
-                st.error(str(e))
-    st.caption("Hover a sample to see what it tests. Each runs through the real pipeline, exactly like an upload.")
 
     iid = st.session_state.get("current_id")
     if iid and st.session_state.pop("seen_msg", False):
@@ -69,8 +53,7 @@ with left:
                 h1.caption("Track the validation steps for your invoice.")
                 ui.tracker([{"stage_no": i + 1, "stage": s, "status": "PENDING", "started_at": None, "ended_at": None}
                             for i, s in enumerate(pipeline.STAGES)], time.time())
-                st.markdown("<div class='z-muted'>Nothing processed yet in this session. Upload an invoice above, or pick one in "
-                            "a <b>sample</b> below the upload box.</div>", unsafe_allow_html=True)
+                st.markdown("<div class='z-muted'>Nothing processed yet in this session. Upload an invoice above to start.</div>", unsafe_allow_html=True)
                 return
             stg = q.stages(conn, iid)
             t0 = min((s["started_at"] for s in stg if s["started_at"]), default=None)

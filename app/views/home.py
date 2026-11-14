@@ -25,7 +25,7 @@ nav[1].markdown("<div style='padding-top:14px'><a href='#how' style='color:#ddd;
 nav[2].markdown("<div style='padding-top:14px'><a href='#benefits' style='color:#ddd;text-decoration:none'>Benefits</a></div>", unsafe_allow_html=True)
 nav[3].markdown("<div style='padding-top:14px'><a href='#faqs' style='color:#ddd;text-decoration:none'>FAQs</a></div>", unsafe_allow_html=True)
 if nav[4].button("Explore Demo", use_container_width=True, key="n_demo"):
-    st.switch_page(st.session_state.pages["upload"])
+    st.switch_page(st.session_state.pages["history"])
 if nav[5].button("Verify Invoice →", type="primary", use_container_width=True, key="n_up"):
     st.switch_page(st.session_state.pages["upload"])
 
@@ -39,7 +39,7 @@ with h1:
     if b[0].button("⬆ Verify an Invoice", type="primary", use_container_width=True):
         st.switch_page(st.session_state.pages["upload"])
     if b[1].button("Explore Demo", use_container_width=True):
-        st.switch_page(st.session_state.pages["upload"])
+        st.switch_page(st.session_state.pages["history"])
 with h2:
     st.markdown("""<div style='padding:60px 0 0 40px'><div class='mock'><b style='font-size:1.4rem;font-style:italic'>INVOICE</b>
     <div class='bar' style='width:70%'></div><div class='bar' style='width:50%'></div><div class='bar'></div><div class='bar' style='width:80%'></div>
