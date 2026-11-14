@@ -1,0 +1,10 @@
+vendor_id,name,aliases,gstin,status,bank_account,ifsc,email,currency,address
+V001,Northstar Office Supplies Pvt Ltd,Northstar Office Supplies|Northstar,29AABCN1234F1Z5,ACTIVE,50100234567890,HDFC0001234,accounts@northstar-office.in,INR,"14 Residency Road, Bengaluru 560025"
+V002,Globex Freight Services LLP,Globex Freight|Globex,27AAGFG5678K1Z2,ACTIVE,912010045677890,UTIB0000456,billing@globexfreight.in,INR,"Plot 22, Turbhe MIDC, Navi Mumbai 400705"
+V003,Apex Industrial Parts Pvt Ltd,Apex Industrial Parts|Apex Industrial,24AACCA4321B1Z8,ACTIVE,30987654321,SBIN0004567,ar@apexindustrial.co.in,INR,"GIDC Phase 2, Vatva, Ahmedabad 382445"
+V004,Kaveri Packaging Solutions,Kaveri Packaging,33AAFCK8765M1Z1,ACTIVE,6112345678,KKBK0008123,finance@kaveripack.in,INR,"SIDCO Estate, Guindy, Chennai 600032"
+V005,Sunrise Electricals,Sunrise Electrical,07ABCPS2345Q1Z4,ACTIVE,00451000123456,HDFC0000045,sunrise.elec@gmail.com,INR,"Lajpat Rai Market, Chandni Chowk, Delhi 110006"
+V006,Bharat Steel Traders,Bharat Steel,19AAKFB3456R1Z6,ACTIVE,1234002100056789,PUNB0123400,accounts@bharatsteel.in,INR,"Howrah Industrial Area, Howrah 711101"
+V007,Meridian Cloud Services Pvt Ltd,Meridian Cloud|Meridian,29AAHCM7788P1Z3,ACTIVE,7712009988,ICIC0007712,billing@meridiancloud.io,INR,"Outer Ring Road, Bellandur, Bengaluru 560103"
+V008,Orion Print House,Orion Print,27AACFO1122L1Z9,BLOCKED,40211223344,BARB0ANDHER,orionprint@yahoo.co.in,INR,"Andheri East, Mumbai 400069"
+V009,Lotus Facility Management Pvt Ltd,Lotus Facility Management|Lotus FM,29AADCL5566N1Z7,ACTIVE,50200098765432,HDFC0002211,accounts@lotusfm.in,INR,"HSR Layout Sector 2, Bengaluru 560102"
