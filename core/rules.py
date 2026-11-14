@@ -447,7 +447,8 @@ def evaluate(inv: InvoiceExtraction, snap: Snapshot, policy: dict, *, verificati
             bal = {"po_total": po["total_amount"], "committed": ba.get("COMMITTED", 0), "reserved": ba.get("RESERVED", 0), "this_invoice": sub, "after": after}
             if after > po["total_amount"] + allowed_over + 0.005:
                 add("PO_BALANCE", "Purchase order", "PO balance", "WARN",
-                    f"PO {po['po_number']} is {inr(po['total_amount'])}. Already billed {inr(used)} (paid/approved {inr(ba.get('COMMITTED', 0))}, on hold {inr(ba.get('RESERVED', 0))}). This invoice adds {inr(sub)} → {inr(after)}, over by {inr(after - po['total_amount'])} (allowed {inr(allowed_over)}).",
+                    f"Would bill {inr(after - po['total_amount'])} more than {po['po_number']} allows (PO value {inr(po['total_amount'])}). "
+                    f"Already billed {inr(used)} (approved {inr(ba.get('COMMITTED', 0))}, on hold {inr(ba.get('RESERVED', 0))}); this invoice adds {inr(sub)} → {inr(after)}; allowed margin {inr(allowed_over)}.",
                     "PO_OVERBILLED", f"≤ {inr(po['total_amount'] + allowed_over)}", inr(after), details=bal)
             else:
                 add("PO_BALANCE", "Purchase order", "PO balance", "PASS", f"{inr(po['total_amount'] - after)} of {inr(po['total_amount'])} left after this invoice.", details=bal)
