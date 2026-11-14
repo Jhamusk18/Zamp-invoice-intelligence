@@ -6,7 +6,7 @@ import pymupdf
 import streamlit as st
 
 from app import helper_panel, ui
-from core import db, decision, helper, queries as q
+from core import db, decision, explain, helper, queries as q
 from core.decision import LABEL
 from core.money import inr, mask_account
 
@@ -116,6 +116,15 @@ def check_html(f, with_cmp=True):
             f"<div class='ms'>{html.escape(f['message'])}</div>" + (f"<div class='cmp'>{html.escape(cmp)}</div>" if cmp else "") + "</div></div>")
 
 
+def show_email(action, reason):
+    """Ready-to-copy vendor email for this decision (fixed template, no AI). Nothing is sent."""
+    e = explain.reviewer_email(conn, iid, action, reason)
+    st.markdown("**Email to the vendor** <span class='z-muted'>· copy it with the icon and send it from your mail - nothing is sent from here</span>",
+                unsafe_allow_html=True)
+    st.markdown(f"<span class='z-muted'>To: {html.escape(e['to'])} (address on file) · Subject: {html.escape(e['subject'])}</span>", unsafe_allow_html=True)
+    st.code(e["body"], language=None, wrap_lines=True)
+
+
 with right:
     ui.verdict(inv, helper.next_step(conn, iid))
     if inv["run_state"] != "DONE":
@@ -132,7 +141,10 @@ with right:
             else:
                 note = q.reviewer_note(conn, iid)
                 who = f" by {note['actor']} on {datetime.fromtimestamp(note['ts']):%d %b %H:%M}" if note else ""
-                st.markdown(f"<span class='z-muted'>Already decided{who}. See the Audit Trail for the reason.</span>", unsafe_allow_html=True)
+                st.markdown(f"<span class='z-muted'>Already decided{who}"
+                            + (f": <b>{html.escape(note['details'].get('reason', ''))}</b>" if note else "") + "</span>", unsafe_allow_html=True)
+                if note:
+                    show_email("approve" if note["action"] == "REVIEWER_APPROVE" else "reject", note["details"].get("reason", ""))
         else:
             labels = {"approve": "✅ Approve", "reject": "⛔ Reject"}
             act = st.segmented_control("Action", [a for a in ("approve", "reject") if a in acts], format_func=lambda a: labels[a],
@@ -154,6 +166,8 @@ with right:
                     reason = pick + (f" - {note_txt.strip()}" if note_txt.strip() else "")
                 eff = "**Ready to Pay** (PO amount committed)" if act == "approve" else "**Blocked** (PO amount released)"
                 st.caption(f"On submit, this invoice becomes {eff} and your reason is saved in the audit trail.")
+                if reason:
+                    show_email(act, reason)
             if st.button("Submit decision", type="primary", icon=":material/send:", disabled=not (act and reason), key=f"submit_{iid}"):
                 try:
                     new = decision.reviewer_action(conn, iid, act, reason)
@@ -166,10 +180,13 @@ with right:
                     st.error(str(e))
 
     fs = q.findings(conn, iid)
-    tabs = st.tabs(["Checks", "Details & Matches", "Email Draft", "Audit Trail"])
+    tabs = st.tabs(["Checks", "Details & Matches", "Audit Trail"])
 
     # ---- Checks: problems first; passed folded; not-applicable as a muted line
     with tabs[0]:
+        if inv["explanation"]:
+            st.markdown(f"<div class='z-card' style='margin-bottom:12px'><b>Summary</b><br><span style='color:#33445F'>{html.escape(inv['explanation'])}</span></div>",
+                        unsafe_allow_html=True)
         bad = sorted([f for f in fs if f["result"] in ("WARN", "FAIL")], key=lambda f: f["result"] != "FAIL")
         if bad:
             st.markdown(f"**Needs your attention ({len(bad)})**")
@@ -257,21 +274,8 @@ with right:
             st.markdown("**Purchase orders considered** <span class='z-muted'>(score = 0.5 × items + 0.35 × amount + 0.15 × dates)</span>", unsafe_allow_html=True)
             st.dataframe(cands, hide_index=True)
 
-    # ---- Email draft
-    with tabs[2]:
-        if inv["email_draft"]:
-            e = json.loads(inv["email_draft"])
-            st.markdown(f"**To:** {e['to']}  \n**Subject:** {e['subject']}")
-            st.code(e["body"], language=None, wrap_lines=True)
-            st.caption("Draft only - copy it with the icon. Nothing is sent automatically, and it always goes to the address on file, never one from the invoice.")
-        else:
-            st.info("No vendor email needed for this invoice.")
-        if inv["explanation"]:
-            st.markdown("**Summary for the AP team**")
-            st.markdown(f"<div class='z-card'>{html.escape(inv['explanation'])}</div>", unsafe_allow_html=True)
-
     # ---- Audit trail, in words
-    with tabs[3]:
+    with tabs[2]:
         WORDS = {"UPLOADED": "Invoice uploaded", "DECIDED": "Rules decided", "EXPLANATION_WRITTEN": "Explanation written",
                  "REVIEWER_APPROVE": "Approved by a person", "REVIEWER_REJECT": "Rejected by a person", "PO_RESERVED": "PO amount put on hold",
                  "PO_COMMITTED": "PO amount committed", "PO_RELEASED": "PO amount released", "RUN_FAILED": "Processing failed",

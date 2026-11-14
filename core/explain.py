@@ -1,4 +1,4 @@
-"""Explanation + vendor email.
+"""Summary for the AP team + the vendor email shown after a reviewer picks a decision and reason.
 
 1. Build a ledger (facts only) from the stored findings.
 2. Template text is always produced (works without AI, zero cost).
@@ -43,36 +43,22 @@ ASK = {
 
 def ledger(conn, invoice_id):
     inv = row(conn, "SELECT * FROM invoices WHERE id=?", (invoice_id,))
-    vendor = row(conn, "SELECT name, email FROM vendors WHERE vendor_id=?", (inv["vendor_id"],)) if inv["vendor_id"] else None
-    f = rows(conn, "SELECT check_id, result, reason_code, message, expected, actual FROM findings WHERE invoice_id=? AND result IN ('WARN','FAIL')", (invoice_id,))
+    f = rows(conn, "SELECT check_id, result, reason_code, message FROM findings WHERE invoice_id=? AND result IN ('WARN','FAIL')", (invoice_id,))
     return {
-        "invoice": {k: inv[k] for k in ("invoice_number", "vendor_name", "invoice_date", "subtotal", "tax", "total", "po_number", "po_match_type")},
-        "decision": LABEL[inv["status"]], "one_line_reason": inv["primary_reason"],
-        "vendor_on_file": vendor, "issues": f,
+        "invoice": {"invoice_number": inv["invoice_number"], "vendor_name": inv["vendor_name"], "invoice_date": inv["invoice_date"],
+                    "subtotal": inr(inv["subtotal"]), "tax": inr(inv["tax"]), "total": inr(inv["total"]),
+                    "po_number": inv["po_number"], "po_match": inv["po_match_type"]},
+        "decision": LABEL[inv["status"]], "one_line_reason": inv["primary_reason"], "issues": f,
     }
 
 
 def template_text(led):
     i = led["invoice"]
     if not led["issues"]:
-        expl = (f"Invoice {i['invoice_number']} from {i['vendor_name']} for {inr(i['total'])} passed every check"
+        return (f"Invoice {i['invoice_number']} from {i['vendor_name']} for {i['total']} passed every check"
                 + (f" and matches {i['po_number']}" if i["po_number"] else "") + ". It is ready to pay.")
-    else:
-        bullets = " ".join(f"({n + 1}) {x['message']}" for n, x in enumerate(led["issues"][:4]))
-        expl = f"Invoice {i['invoice_number']} from {i['vendor_name']} for {inr(i['total'])}: {led['decision']}. {bullets}"
-    asks = [ASK[x["reason_code"]] for x in led["issues"] if x["reason_code"] in VENDOR_FACING and x["reason_code"] in ASK]
-    asks = list(dict.fromkeys(asks))
-    email = None
-    if asks:
-        name = (led["vendor_on_file"] or {}).get("name") or i["vendor_name"]
-        to = (led["vendor_on_file"] or {}).get("email", "")
-        body = "\n\n".join([f"Dear {name} team,",
-                            f"Thank you for invoice {i['invoice_number']} dated {i['invoice_date']} for {inr(i['total'])}"
-                            + (f" against PO {i['po_number']}" if i["po_match_type"] == "EXPLICIT" else "") + ". We need your help before we can process it:"]
-                           + [f"{n + 1}. {a}" for n, a in enumerate(asks)]
-                           + ["Kind regards,\nAccounts Payable, Acme Retail India Pvt Ltd"])
-        email = {"to": to, "subject": f"Invoice {i['invoice_number']} - action needed", "body": body}
-    return expl, email
+    bullets = " ".join(f"({n + 1}) {x['message']}" for n, x in enumerate(led["issues"][:4]))
+    return f"Invoice {i['invoice_number']} from {i['vendor_name']} for {i['total']}: {led['decision']}. {bullets}"
 
 
 _NUM = re.compile(r"\d[\d,]*(?:\.\d+)?")
@@ -80,7 +66,7 @@ _NUM = re.compile(r"\d[\d,]*(?:\.\d+)?")
 
 def numbers_ok(text: str, led: dict) -> bool:
     """Every number written by the AI must exist somewhere in the ledger (ignores 1-2 digit list counters)."""
-    hay = json.dumps(led, default=str)
+    hay = json.dumps(led, default=str, ensure_ascii=False)
     hay_n = set(n.replace(",", "") for n in _NUM.findall(hay))
     hay_n |= {str(int(float(x))) for x in hay_n if re.fullmatch(r"\d+(\.\d+)?", x)}
     for n in _NUM.findall(text or ""):
@@ -93,19 +79,46 @@ def numbers_ok(text: str, led: dict) -> bool:
 
 
 def build(conn, invoice_id, file_hash, use_ai: bool):
-    """Returns (explanation, email_dict_or_None, source) where source is 'ai' or 'template'."""
+    """Returns (summary, None, source) where source is 'ai' or 'template'. (No vendor email here any more.)"""
     from core import llm
     led = ledger(conn, invoice_id)
-    expl, email = template_text(led)
+    expl = template_text(led)
     if not use_ai or not llm.available():
-        return expl, email, "template"
+        return expl, None, "template"
     try:
-        out, _ = llm.write_text(conn, file_hash, led, needs_email=email is not None)
+        out, _ = llm.write_text(conn, file_hash, led)
     except Exception:
-        return expl, email, "template"
-    ai_text = out["explanation"] + " " + (out.get("email_body") or "")
-    if not numbers_ok(ai_text, led):
-        return expl, email, "template (AI text rejected: a number didn't match the ledger)"
-    if email and out.get("email_body"):
-        email = {"to": email["to"], "subject": out.get("email_subject") or email["subject"], "body": out["email_body"]}
-    return out["explanation"], email, "ai"
+        return expl, None, "template"
+    if not numbers_ok(out["explanation"], led):
+        return expl, None, "template (AI text rejected: a number didn't match the ledger)"
+    return out["explanation"], None, "ai"
+
+
+# ------------------------------------------------------------------ vendor email after a human decision (template only)
+
+SIGN = "Kind regards,\nAccounts Payable, Acme Retail India Pvt Ltd"
+
+
+def reviewer_email(conn, invoice_id, action: str, reason: str):
+    """A short, ready-to-copy email for the reviewer's decision. Plain template - no AI, nothing is sent.
+    Always addressed to the email ON FILE, never one taken from the invoice."""
+    inv = row(conn, "SELECT * FROM invoices WHERE id=?", (invoice_id,))
+    v = row(conn, "SELECT name, email FROM vendors WHERE vendor_id=?", (inv["vendor_id"],)) if inv["vendor_id"] else None
+    name = (v or {}).get("name") or inv["vendor_name"] or "Vendor"
+    to = (v or {}).get("email") or "(no email on file - find the vendor's contact in the vendor master)"
+    ref = f"invoice {inv['invoice_number']} dated {inv['invoice_date']} for {inr(inv['total'])}"
+    po = f" ({inv['po_number']})" if inv["po_number"] and inv["po_match_type"] == "EXPLICIT" else ""
+    codes = json.loads(inv["reason_codes"] or "[]")
+    if action == "approve":
+        subject = f"Invoice {inv['invoice_number']} approved for payment"
+        lines = [f"Dear {name} team,", f"Your {ref}{po} has been approved for payment as per our agreed terms."]
+        if "BANK_CHANGED" in codes:
+            lines.append("Payment will go to the bank account we confirmed with you by phone.")
+    else:
+        subject = f"Invoice {inv['invoice_number']} - not processed"
+        lines = [f"Dear {name} team,", f"We are unable to process your {ref}{po}.", f"Reason: {reason.rstrip('.')}."]
+        asks = [ASK[c] for c in codes if c in VENDOR_FACING and c in ASK]
+        if asks:
+            lines.append("To help us resolve it:\n" + "\n".join(f"- {a}" for a in dict.fromkeys(asks)))
+        lines.append("Please reply to this email or send a corrected invoice.")
+    return {"to": to, "subject": subject, "body": "\n\n".join(lines + [SIGN])}

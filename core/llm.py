@@ -3,7 +3,7 @@
 What the AI is allowed to do here:
   1. extract()        - read the invoice into fields, with a quoted snippet per field
   2. judge_lines()    - say how alike two item descriptions are (0..1). Python does the scoring.
-  3. write_text()     - turn the findings ledger into plain English / a vendor email draft.
+  3. write_text()     - turn the findings ledger into a short plain-English summary for the AP team.
 It never sees a decision it could influence and never returns a status.
 
 Pinned versions (requirements.txt): langchain-core 1.8.0, langchain-google-genai 4.5.0.
@@ -56,7 +56,7 @@ def available() -> bool:
 
 def _chat(model: str):
     if not api_key():
-        raise TechnicalError("AI extraction isn't configured: add GEMINI_API_KEY to .streamlit/secrets.toml.")
+        raise TechnicalError("AI reading isn't set up on this server: add GEMINI_API_KEY in the app's Settings → Secrets (or .streamlit/secrets.toml when running on a laptop), then click Retry.")
     from langchain_google_genai import ChatGoogleGenerativeAI
     # retries are handled below (with backoff on rate limits), so the client itself doesn't retry
     return ChatGoogleGenerativeAI(model=model, google_api_key=api_key(), temperature=0, max_retries=0, timeout=60)
@@ -225,16 +225,13 @@ def judge_lines(conn, file_hash: str, invoice_lines: list[str], po_lines: list[d
 
 class Writeup(BaseModel):
     explanation: str = Field(description="3-5 short sentences for an AP clerk. Plain English. No new facts.")
-    email_subject: str | None = None
-    email_body: str | None = Field(None, description="Polite email to the vendor, only if vendor action is needed")
 
 
-def write_text(conn, file_hash: str, ledger: dict, needs_email: bool, use_cache=True):
+def write_text(conn, file_hash: str, ledger: dict, use_cache=True):
     model = models()["primary"]
     prompt = ("You write for an Accounts Payable team. Using ONLY the facts in this JSON ledger, write a short plain-English "
-              "explanation of the decision" + (" and a polite email to the vendor asking them to resolve the vendor-side issues"
-              " (do not mention internal limits or hidden-text findings to the vendor; for a bank change, say we will call the number on our records)" if needs_email else "")
-              + ". Never change, round or invent a number, name or date. Do not suggest the decision is anything other than the ledger's.\n\n"
-              + json.dumps(ledger, indent=1, default=str))
+              "summary of the decision and why. Copy amounts exactly as written in the ledger (e.g. ₹49,560.00). "
+              "Never change, round or invent a number, name or date. Do not suggest the decision is anything other than the ledger's.\n\n"
+              + json.dumps(ledger, indent=1, default=str, ensure_ascii=False))
     data, meta = _invoke_structured(conn, _key(file_hash, "write", model, json.dumps(ledger, sort_keys=True, default=str)), model, Writeup, [("human", prompt)], use_cache)
     return data, meta

@@ -1,7 +1,7 @@
 """Invoice Helper: a guided assistant for ONE invoice.
 
 Menu answers are templates filled from stored results - no AI, no cost, always consistent.
-It can explain, point to actions on the Review page and show the email draft. It can never approve, reject,
+It can explain and point to actions on the Review page. It can never approve, reject,
 edit data, change rules or send email. Each invoice keeps its own conversation (chat_messages).
 """
 import json
@@ -175,8 +175,8 @@ def _next(conn, iid):
         t = ["**Recommended steps:**"] + [f"{n + 1}. {NEXT_STEP[c]}" for n, c in enumerate([c for c in codes if c in NEXT_STEP])]
         if i["status"] == "FLAGGED":
             t.append("\nWhen you're done, **Approve** or **Reject** it on the Review page, with a reason.")
-    if i["email_draft"]:
-        t.append("\nA vendor email draft is ready (copy it below or from the **Email Draft** tab). Nothing is sent automatically.")
+    if i["status"] == "FLAGGED" or (i["status"] == "APPROVED" and i["decided_by"] == "system"):
+        t.append("\nWhen you pick a decision and a reason on the Review page, a ready-to-copy email to the vendor appears there. Nothing is sent automatically.")
     return "\n".join(t)
 
 

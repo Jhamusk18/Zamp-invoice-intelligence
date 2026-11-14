@@ -1,7 +1,5 @@
 """'Ask about this invoice' panel (Upload page side panel, Review page popover).
 Explains stored results only - never approves, rejects or changes anything."""
-import json
-
 import streamlit as st
 
 from core import helper, queries as q
@@ -57,8 +55,3 @@ def render(conn, iid, key_prefix="h", height=380):
         if len(msgs) > 1 and st.button("↺ Start over", key=f"{key_prefix}_start_{iid}", type="tertiary"):
             helper.ask(conn, iid, key="start")
             st.rerun()
-        if inv["email_draft"] and msgs and msgs[-1]["role"] == "assistant" and "email draft is ready" in msgs[-1]["content"]:
-            e = json.loads(inv["email_draft"])
-            with st.expander("📧 Vendor email draft (copy - nothing is sent)", expanded=True):
-                st.caption(f"To: {e['to']} · Subject: {e['subject']}")
-                st.code(e["body"], language=None, wrap_lines=True)

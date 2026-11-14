@@ -4,7 +4,7 @@
   2 Text Extracted    text layer or OCR; AI reads fields + snippets (read 1)
   3 Fields Validated  snippets checked against the document; arithmetic; hidden text; re-read ONCE if needed
   4 Policy Checks     every business check, decision and PO money - one database transaction
-  5 Decision & Audit  plain-English explanation + vendor email draft; audit entry
+  5 Decision & Audit  plain-English summary for the AP team; audit entry
 
 Two kinds of failure (locked decision):
   * TechnicalError (bad file, unreadable scan, AI service down)  -> stage FAILED, run_state ERROR, no money touched.
@@ -175,7 +175,7 @@ def run(iid: int, conn=None, extractor=None, use_ai_text: bool = True, use_cache
         with db.tx(conn):
             conn.execute("UPDATE invoices SET explanation=?, email_draft=?, run_state='DONE' WHERE id=?",
                          (expl, json.dumps(email) if email else None, iid))
-            db.audit(conn, "system", "EXPLANATION_WRITTEN", iid, source=source, email_draft=bool(email))
+            db.audit(conn, "system", "EXPLANATION_WRITTEN", iid, source=source)
         _stage(conn, iid, 5, "DONE", f"{decision.LABEL[status]} · explanation by {source} · audit logged")
     except TechnicalError as e:
         _fail(conn, iid, stage_no, str(e))
