@@ -15,7 +15,13 @@ from core import db, decision, pipeline, policy
 from core.models import InvoiceExtraction, Line
 
 SPEC = db.ROOT / "sample_data" / "invoices.json"
-PDF_DIR = db.ROOT / "sample_data" / "invoices"
+HISTORY_DIR = db.ROOT / "sample_data" / "history_invoices"   # pre-loaded into History at reset - never uploaded
+TEST_DIR = db.ROOT / "sample_data" / "test_invoices"         # happy path + edge cases - upload these live
+
+
+def pdf_path(key_or_spec):
+    s = key_or_spec if isinstance(key_or_spec, dict) else next(x for x in specs() if x["key"] == key_or_spec)
+    return (HISTORY_DIR if s["role"] == "seed" else TEST_DIR) / f"{s['key']}.pdf"
 DEMO_TODAY = None  # use the real date
 
 
@@ -47,7 +53,7 @@ def reset(path=None, verbose=False):
     for s in specs():
         if s["role"] != "seed":
             continue
-        data = (PDF_DIR / f"{s['key']}.pdf").read_bytes()
+        data = pdf_path(s).read_bytes()
         iid, _ = pipeline.submit(conn, data, f"{s['key']}.pdf", source="seed", background=False,
                                  extractor=pipeline.truth_extractor(truth_of(s)), use_ai_text=False)
         if s.get("seed_review"):

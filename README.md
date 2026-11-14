@@ -15,7 +15,7 @@ streamlit run app/streamlit_app.py
 ```
 
 The sample database builds itself on first start. **Reset Demo Data** (sidebar) rebuilds it.
-Regenerate the sample PDFs with `python scripts/make_sample_invoices.py`. Run tests with `pytest -q`.
+Regenerate the sample PDFs with `python scripts/make_sample_invoices.py` (writes both folders). Run tests with `pytest -q`.
 
 ## Who does what
 
@@ -33,7 +33,9 @@ Regenerate the sample PDFs with `python scripts/make_sample_invoices.py`. Run te
 - **Profile** - your approvals/rejections, the approval rules (with "see what would change"), and the prototype's assumptions
 - **Review** (opens from Upload or History) - original PDF, extracted values with their source, every check, PO match and money, vendor email draft, audit trail, Approve/Reject with a reason
 
-## Demo cases (`sample_data/invoices/`)
+## Demo cases — `sample_data/test_invoices/` (upload these)
+
+The 8 past invoices that pre-fill History are in `sample_data/history_invoices/` (don't upload those).
 
 | File | Case | Expected |
 |---|---|---|
@@ -58,7 +60,8 @@ Regenerate the sample PDFs with `python scripts/make_sample_invoices.py`. Run te
 ```
 app/            Streamlit screens (display only: they call core/, never SQL)
 core/           pipeline, rules, decision, policy, document checks, AI layer, helper, what-if, eval
-sample_data/    company/*.csv (vendors, POs, receipts) + invoices.json (ground truth + expected outcomes) + PDFs
+sample_data/    company/*.csv (vendors, POs, receipts) · invoices.json (ground truth + expected outcomes)
+                test_invoices/ (upload these) · history_invoices/ (pre-loaded into History)
 tests/          hand-checked cases and safety rules
 docs/           decisions made along the way
 ```

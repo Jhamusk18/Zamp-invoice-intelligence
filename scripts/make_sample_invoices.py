@@ -1,5 +1,8 @@
 """Generate the sample invoice PDFs from sample_data/invoices.json.
 
+History invoices (role "seed") -> sample_data/history_invoices/   (pre-loaded into History)
+Test invoices (role "demo")    -> sample_data/test_invoices/      (upload these live)
+
 Three vendor layouts (classic / modern / minimal) so extraction can't rely on one template.
 'scanned: true'  -> page is rasterised, skewed and noised, and saved as an image-only PDF (no text layer).
 'hidden_text'    -> tiny white text is drawn on the page (prompt-injection attempt).
@@ -24,7 +27,7 @@ sys.path.insert(0, str(ROOT))
 from core.money import inr  # noqa: E402
 
 SPEC = ROOT / "sample_data" / "invoices.json"
-OUT = ROOT / "sample_data" / "invoices"
+OUT = {"seed": ROOT / "sample_data" / "history_invoices", "demo": ROOT / "sample_data" / "test_invoices"}
 VENDORS = {}
 
 
@@ -273,10 +276,11 @@ def scanify(pdf_bytes: bytes, seed: int = 1) -> bytes:
 
 def main():
     load_vendor_addresses()
-    OUT.mkdir(parents=True, exist_ok=True)
+    for d in OUT.values():
+        d.mkdir(parents=True, exist_ok=True)
     specs = json.loads(SPEC.read_text())["invoices"]
     for s in specs:
-        path = OUT / f'{s["key"]}.pdf'
+        path = OUT[s["role"]] / f'{s["key"]}.pdf'
         path.write_bytes(make_pdf(s))
         print("wrote", path.relative_to(ROOT))
 

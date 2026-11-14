@@ -27,7 +27,7 @@ def cases(set_name="demo"):
     for s in seed.specs():
         if set_name == "demo" and s["role"] == "demo":
             out.append({"key": s["key"], "title": s.get("title", s["key"]), "layout": s["layout"] + (" (scan)" if s.get("scanned") else ""),
-                        "category": s.get("title", ""), "pdf": seed.PDF_DIR / f"{s['key']}.pdf", "truth": seed.truth_of(s),
+                        "category": s.get("title", ""), "pdf": seed.pdf_path(s), "truth": seed.truth_of(s),
                         "expected": s["expected"], "split": "held-out"})
     evalfile = db.ROOT / "sample_data" / "eval" / "eval_set.json"
     if set_name != "demo" and evalfile.exists():

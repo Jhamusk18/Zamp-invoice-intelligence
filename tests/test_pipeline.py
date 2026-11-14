@@ -16,7 +16,7 @@ def conn(tmp_path):
 
 def run(conn, key):
     s = next(x for x in seed.specs() if x["key"] == key)
-    iid, _ = pipeline.submit(conn, (seed.PDF_DIR / f"{key}.pdf").read_bytes(), key + ".pdf", background=False,
+    iid, _ = pipeline.submit(conn, (seed.pdf_path(key)).read_bytes(), key + ".pdf", background=False,
                              extractor=pipeline.truth_extractor(seed.truth_of(s)), use_ai_text=False)
     return s, db.row(conn, "SELECT * FROM invoices WHERE id=?", (iid,))
 
@@ -31,7 +31,7 @@ def test_demo_cases(conn, key):
 
 def test_same_file_is_not_processed_twice(conn):
     _, inv = run(conn, "D1_happy_path")
-    data = (seed.PDF_DIR / "D1_happy_path.pdf").read_bytes()
+    data = (seed.pdf_path("D1_happy_path")).read_bytes()
     iid, seen = pipeline.submit(conn, data, "again.pdf", background=False)
     assert seen and iid == inv["id"]
 

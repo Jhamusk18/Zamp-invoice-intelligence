@@ -75,7 +75,7 @@ def test_lookalike_without_gstin_goes_to_a_person(conn):
 def test_scan_without_ocr_engine_goes_to_a_person_not_an_error(conn):
     s = next(x for x in seed.specs() if x["key"] == "D2_scanned_no_po")
     with mock.patch("core.document.ocr_pages", return_value=None):
-        iid, _ = pipeline.submit(conn, (seed.PDF_DIR / "D2_scanned_no_po.pdf").read_bytes(), "scan.pdf", background=False,
+        iid, _ = pipeline.submit(conn, (seed.pdf_path("D2_scanned_no_po")).read_bytes(), "scan.pdf", background=False,
                                  extractor=pipeline.truth_extractor(seed.truth_of(s)), use_ai_text=False)
     i = db.row(conn, "SELECT run_state, status, reason_codes FROM invoices WHERE id=?", (iid,))
     assert i["run_state"] == "DONE" and i["status"] == "FLAGGED" and "UNVERIFIED_FIELD" in json.loads(i["reason_codes"])
