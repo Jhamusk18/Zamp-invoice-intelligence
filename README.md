@@ -45,6 +45,7 @@ The 8 past invoices that pre-fill History are in `sample_data/history_invoices/`
 | D4 | Billed 80, received 70 | Needs Attention |
 | D5 | Total matches the PO, line prices don't | Needs Attention |
 | X1-X3 | Disguised duplicate · split PO over-billed · vendor arithmetic error | Blocked · Needs Attention · Needs Attention |
+| X4-X8 | Blocked vendor · unknown vendor · lookalike vendor · price +7.3% over PO · quotation, not an invoice | Blocked (all five) |
 
 ## Next steps (known limits, not built)
 

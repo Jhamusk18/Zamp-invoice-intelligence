@@ -115,10 +115,10 @@ def layout_classic(c, t, v, sub, tax, total):
     c.drawString(40, H - 76, v["address"])
     c.drawString(40, H - 89, f'GSTIN: {t["vendor_gstin"]}')
     c.setFont("Helvetica-Bold", 20)
-    c.drawRightString(W - 40, H - 60, "TAX INVOICE")
+    c.drawRightString(W - 40, H - 60, t.get("_title") or "TAX INVOICE")
     c.setFont("Helvetica", 9.5)
-    rows = [("Invoice No:", t["invoice_number"]), ("Invoice Date:", fmt_date(t["invoice_date"])),
-            ("Due Date:", fmt_date(t["due_date"]))]
+    lb = t.get("_labels") or ["Invoice No:", "Invoice Date:", "Due Date:"]
+    rows = [(lb[0], t["invoice_number"]), (lb[1], fmt_date(t["invoice_date"])), (lb[2], fmt_date(t["due_date"]))]
     if t.get("po_reference"):
         rows.append(("PO Number:", t["po_reference"]))
     y = H - 82
@@ -238,7 +238,9 @@ LAYOUTS = {"classic": layout_classic, "modern": layout_modern, "minimal": layout
 
 def make_pdf(spec) -> bytes:
     t = json.loads(json.dumps(spec["truth"]))
-    v = VENDORS[t["vendor_gstin"]]
+    v = VENDORS.get(t["vendor_gstin"]) or spec["vendor_info"]  # unknown / lookalike vendors aren't in the vendor master
+    if spec.get("doc_title"):
+        t["_title"], t["_labels"] = spec["doc_title"], spec.get("doc_labels")
     sub, tax, total = totals(t, spec.get("subtotal_printed"))
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=A4)
@@ -274,16 +276,19 @@ def scanify(pdf_bytes: bytes, seed: int = 1) -> bytes:
     return out.getvalue()
 
 
-def main():
+def main(only=None):
+    """only: list of key prefixes (e.g. ["X4", "X5"]) to (re)generate just those files; existing PDFs stay byte-identical."""
     load_vendor_addresses()
     for d in OUT.values():
         d.mkdir(parents=True, exist_ok=True)
     specs = json.loads(SPEC.read_text())["invoices"]
     for s in specs:
+        if only and not any(s["key"].startswith(o) for o in only):
+            continue
         path = OUT[s["role"]] / f'{s["key"]}.pdf'
         path.write_bytes(make_pdf(s))
         print("wrote", path.relative_to(ROOT))
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:] or None)

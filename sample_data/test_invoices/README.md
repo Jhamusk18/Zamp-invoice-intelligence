@@ -12,5 +12,10 @@ Download any of these and drop it on the **Upload** page. Each one runs through 
 | `X1_duplicate.pdf` | Invoice INV-0042 sent again as "42" | ⛔ Blocked |
 | `X2_split_po_overbill.pdf` | Third invoice on one PO goes over the PO value and the quantity received | ⚠️ Needs Attention |
 | `X3_vendor_math_error.pdf` | Printed subtotal doesn't equal the line items | ⚠️ Needs Attention |
+| `X4_blocked_vendor.pdf` | New invoice from Orion Print House, a vendor blocked in the vendor master | ⛔ Blocked |
+| `X5_unknown_vendor.pdf` | Invoice from "Quickfix Hardware Mart", not on the approved vendor list | ⛔ Blocked |
+| `X6_lookalike_vendor.pdf` | "Globex **Frieght** Services LLP" - lookalike name, different GSTIN and bank, billing a real Globex PO | ⛔ Blocked |
+| `X7_price_over_limit.pdf` | Ceiling fans at ₹2,950 vs PO ₹2,750 (+7.3%, above the 5% block limit) | ⛔ Blocked |
+| `X8_quotation_not_invoice.pdf` | A QUOTATION, not an invoice - nothing is payable | ⛔ Blocked |
 
 Uploading the same file twice shows the earlier result. Use **Reset Demo Data** (sidebar) to run them fresh.
