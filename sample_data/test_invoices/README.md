@@ -18,4 +18,4 @@ Download any of these and drop it on the **Upload** page. Each one runs through 
 | `X7_price_over_limit.pdf` | Ceiling fans at ₹2,950 vs PO ₹2,750 (+7.3%, above the 5% block limit) | ⛔ Blocked |
 | `X8_quotation_not_invoice.pdf` | A QUOTATION, not an invoice - nothing is payable | ⛔ Blocked |
 
-Uploading the same file twice shows the earlier result. Use **Reset Demo Data** (sidebar) to run them fresh.
+Uploading the same file twice shows the earlier result. Use **Profile → Reset demo data** to run them fresh.

@@ -1,8 +1,12 @@
 # Zamp AP Assistant — PS-1: Invoice processing, from PDF to decision
 
+**Live app:** https://zamp-invoice-intelligence.streamlit.app
+
 Upload a vendor invoice PDF (text or scanned). AI reads it, Python checks it against the company's vendors,
 purchase orders, goods receipts and approval rules, and the result is **Ready to Pay**, **Needs Attention** or **Blocked**,
 with every reason, the evidence, a vendor email draft and an audit trail. A person decides every exception.
+
+Submission notes (edge cases, process map, demo script): [`docs/SUBMISSION.md`](docs/SUBMISSION.md)
 
 ## Run it locally
 
@@ -14,24 +18,24 @@ cp .streamlit/secrets.toml.example .streamlit/secrets.toml   # then paste your G
 streamlit run app/streamlit_app.py
 ```
 
-The sample database builds itself on first start. **Reset Demo Data** (sidebar) rebuilds it.
+The sample database builds itself on first start. **Profile → Reset demo data** rebuilds it.
 Regenerate the sample PDFs with `python scripts/make_sample_invoices.py` (writes both folders). Run tests with `pytest -q`.
 
 ## Who does what
 
 | | Does | Never does |
 |---|---|---|
-| **AI** (Gemini via LangChain, `core/llm.py`) | Reads fields + quotes a snippet for each; judges whether two item descriptions mean the same thing; writes the explanation and email from the findings | Sees or sets a status |
+| **AI** (Gemini via LangChain, `core/llm.py`) | Reads fields + quotes a snippet for each; judges whether two item descriptions mean the same thing; writes the plain-English summary from the findings (numbers checked against the findings, else a template is used) | Sees or sets a status |
 | **Python** (`core/rules.py`, `core/decision.py`) | Checks every snippet against the document, arithmetic, hidden text, vendor, GSTIN, bank, duplicates, PO, prices, PO balance, goods received, dates, limits; sets the status; moves PO money | Guesses |
-| **Person** (Review page) | Approves or rejects Needs Attention invoices, with a reason | - |
+| **Person** (Review page) | Marks a Needs Attention invoice Ready to Pay or Blocked with a note (or pulls back a Ready to Pay one); sends the prepared vendor email | - |
 
 ## Screens
 
 - **Welcome** - what it does, how it works, FAQs
-- **Upload** - drop a PDF, watch 5 live steps, get the decision, ask the Invoice Helper, open **Review**
+- **Upload** - drop a PDF, watch 5 live steps, get the decision, chat with the Zamp Assistant, open **Review**
 - **History** - every invoice with totals per status, search, filters (status, vendor, date) and sorting; click a row for **Review**
 - **Profile** - your approvals/rejections, the approval rules (with "see what would change"), and the prototype's assumptions
-- **Review** (opens from Upload or History) - original PDF, extracted values with their source, every check, PO match and money, vendor email draft, audit trail, Approve/Reject with a reason
+- **Review** (opens from Upload or History) - the original PDF beside the result and next step, a review note with a Needs Attention / Ready to Pay / Blocked choice, a vendor email that follows the choice (copy or open in Gmail), and the Zamp Assistant
 
 ## Demo cases — `sample_data/test_invoices/` (upload these)
 
@@ -54,7 +58,7 @@ The 8 past invoices that pre-fill History are in `sample_data/history_invoices/`
 - Test that processing two related invoices in either order gives consistent results
 - Hidden-text detector tested on a large set of real-world PDFs
 - Login / shared password for a public link; recording phone verification of bank changes in the app
-- AI answers for free-typed Invoice Helper questions (today: keyword routing to the fixed menu)
+- AI answers for free-typed assistant questions (today: keyword routing to the fixed menu)
 
 ## Layout
 
