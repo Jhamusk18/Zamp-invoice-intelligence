@@ -75,26 +75,38 @@ with st.container(key="card_table"):
             st.switch_page(st.session_state.pages["upload"])
         st.stop()
 
-    W = [1.7, 1.9, 1.0, 1.35, 3.0, 0.7]
-    st.markdown("<div class='z-thead'>" + "".join(f"<div style='flex:{w} 1 0'>{h}</div>" for w, h in zip(W + [1.0], ["Invoice", "Vendor", "<div style='text-align:right;padding-right:14px'>Amount</div>", "Status", "Reason", "Date", "Action"]))
-                + "</div>", unsafe_allow_html=True)
+    # roomy table: 6 columns, two lines per cell (bold main line + small grey line)
+    W = [2.3, 1.35, 2.5, 1.1, 1.45]
+    heads = ["Vendor", "Invoice date", "Invoice", "<div style='text-align:right;padding-right:24px'>Amount</div>", "Status"]
+    st.markdown("<div class='z-thead'>" + "".join(f"<div style='flex:{w} 1 0'>{h}</div>" for w, h in zip(W, heads))
+                + "<div style='flex:1 1 0;text-align:center'>Action</div></div>", unsafe_allow_html=True)
+    from datetime import datetime
+    COLOR = {"APPROVED": "#0F9F6E", "FLAGGED": "#C9741B", "REJECTED": "#D63A52"}
     for r in data:
         with st.container(key=f"row_{r['id']}"):
             c1, c2 = st.columns([sum(W), 1.0], vertical_alignment="center")
             reason = r["primary_reason"] or r["error_message"] or ""
             d = r["invoice_date"] or ""
-            date = f"{d[8:10]} {MON[int(d[5:7]) - 1]}" if len(d) == 10 else "—"
-            sub = "Sample history" if r["source"] == "seed" else "Uploaded"
-            cells = [ui.file_cell(r["invoice_number"] or r["filename"] or "", sub),
-                     f"<div class='z-vend'>{ui.avatar(r['vendor_name'] or '?')}<span class='nm'>{html.escape(r['vendor_name'] or '—')}</span></div>",
-                     f"<span class='z-amt'>{inr(r['total'], decimals=0) if r['total'] is not None else '—'}</span>",
-                     ui.pill(r, with_sub=True),
-                     f"<div class='z-reason' title='{html.escape(reason)}'>{html.escape(reason)}</div>",
-                     f"<span class='z-muted'>{date}</span>"]
-            c1.markdown("<div style='display:flex;flex-direction:row;align-items:center;gap:10px;min-height:3.2rem'>"
+            date = f"{int(d[8:10])} {MON[int(d[5:7]) - 1]} {d[:4]}" if len(d) == 10 else "—"
+            when = f"checked {datetime.fromtimestamp(r['uploaded_at']):%d %b, %H:%M}" if r["uploaded_at"] else ""
+            src = "Sample history" if r["source"] == "seed" else "Uploaded"
+            if r["run_state"] != "DONE":
+                stat = f"<div class='z-l1' style='color:#64748B'>{'Failed' if r['run_state'] == 'ERROR' else 'Processing…'}</div>"
+            else:
+                from core.decision import LABEL
+                who = ("approved by reviewer" if r["status"] == "APPROVED" else "rejected by reviewer") if r["decided_by"] == "reviewer" else "by the rules"
+                stat = f"<div class='z-l1' style='color:{COLOR[r['status']]}'>● {LABEL[r['status']]}</div><div class='z-l2'>{who}</div>"
+            cells = [f"<div class='z-vend'>{ui.avatar(r['vendor_name'] or '?')}<div style='min-width:0'><div class='z-l1 nm'>{html.escape(r['vendor_name'] or 'Unknown vendor')}</div>"
+                     f"<div class='z-l2'>{src}</div></div></div>",
+                     f"<div class='z-l1'>{date}</div><div class='z-l2'>{when}</div>",
+                     f"<div class='z-l1' style='color:#475569;font-weight:600'>{html.escape(r['invoice_number'] or r['filename'] or '')}</div>"
+                     f"<div class='z-l2 z-1line' title='{html.escape(reason)}'>{html.escape(reason)}</div>",
+                     f"<div class='z-l1' style='text-align:right;padding-right:24px;font-weight:800'>{inr(r['total'], decimals=0) if r['total'] is not None else '—'}</div>",
+                     stat]
+            c1.markdown("<div style='display:flex;flex-direction:row;align-items:center;gap:14px;min-height:3.6rem'>"
                         + "".join(f"<div class='z-cell' style='flex:{w} 1 0;min-width:0'>{x}</div>" for w, x in zip(W, cells)) + "</div>",
                         unsafe_allow_html=True)
-            if c2.button("Open", key=f"open_{r['id']}", icon=":material/arrow_forward:"):
+            if c2.button("Details", key=f"open_{r['id']}", use_container_width=True):
                 st.switch_page(st.session_state.pages["review"], query_params={"id": str(r["id"])})
 
     pages = max(1, -(-total // PAGE))

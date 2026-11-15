@@ -109,14 +109,13 @@ div[data-testid="stVerticalBlockBorderWrapper"] { border-radius: 14px; }
 .st-key-card_table { background:#fff; border:1px solid var(--line); border-radius: 18px; padding: 16px 18px 12px; box-shadow: 0 8px 24px rgba(15,27,51,.06); }
 .z-tabletitle { font-size: 1.12rem; font-weight: 800; color: var(--txt); display:flex; align-items:center; gap: 10px; }
 .z-count { font-size: .76rem; font-weight: 700; background: #E6EEFE; color: #2449C9; border-radius: 999px; padding: 3px 11px; }
-.z-thead { display:flex; color: #475569; font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.07em;
-           padding: 12px 16px; background: #F1F4FA; border-radius: 12px; margin: 12px 0 4px; }
-[class*="st-key-row_"] { border-bottom: 1px solid #EEF2F8; padding: 8px 16px !important; transition: background .12s; }
+.z-thead { display:flex; color: #0F172A; font-size:.95rem; font-weight:700; padding: 16px 24px; background: #F1F4F9; border-radius: 14px 14px 0 0; margin: 14px 0 0; gap: 14px; }
+[class*="st-key-row_"] { border-bottom: 1px solid #EEF2F8; padding: 18px 24px !important; transition: background .12s; }
 [class*="st-key-row_"]:hover { background: #F6F9FF; }
 [class*="st-key-row_"] [data-testid="stMarkdownContainer"] p { margin: 0; }
 [class*="st-key-row_"] [data-testid="stMarkdown"], [class*="st-key-row_"] [data-testid="stElementContainer"] { margin-bottom: 0 !important; }
-[class*="st-key-row_"] .stButton > button { background: #EAF1FF; color: #2449C9; border: 1px solid #D3E0FB; border-radius: 999px; padding: 3px 14px; white-space: nowrap;
-  min-height: 0; font-weight: 700; box-shadow: 0 2px 6px rgba(37,99,235,.08); }
+[class*="st-key-row_"] .stButton > button { background: #fff; color: #0F172A; border: 1px solid #E2E8F2; border-radius: 10px; padding: 9px 18px; white-space: nowrap;
+  min-height: 0; font-weight: 600; box-shadow: 0 1px 2px rgba(15,23,42,.05); }
 [class*="st-key-row_"] .stButton > button:hover { background: #2F5BEA; color: #fff; border-color: #2F5BEA; }
 [class*="st-key-row_"] .stButton > button p, [class*="st-key-row_"] .stButton > button span { color: inherit !important; font-weight: 700; }
 .z-cell { font-size: .9rem; color: var(--txt); line-height: 1.3; padding-right: 8px; }
@@ -126,8 +125,12 @@ div[data-testid="stVerticalBlockBorderWrapper"] { border-radius: 14px; }
 .z-file .doc svg { width: 20px; height: 22px; }
 .z-file .nm { font-weight: 700; color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .z-file .sub { font-size: .76rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.z-vend { display:flex; align-items:center; gap: 10px; min-width: 0; }
-.z-av { width: 32px; height: 32px; border-radius: 50%; flex: none; display:flex; align-items:center; justify-content:center; font-size: .74rem; font-weight: 800; }
+.z-vend { display:flex; align-items:center; gap: 14px; min-width: 0; }
+.z-av { width: 46px; height: 46px; border-radius: 12px; flex: none; display:flex; align-items:center; justify-content:center; font-size: .9rem; font-weight: 800; }
+.z-l1 { font-size: .98rem; font-weight: 600; color: var(--txt); line-height: 1.35; }
+.z-l2 { font-size: .82rem; color: var(--muted); margin-top: 3px; line-height: 1.3; }
+.z-1line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.z-vend .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .z-vend .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .z-amt { display:block; text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; padding-right: 14px; }
 
