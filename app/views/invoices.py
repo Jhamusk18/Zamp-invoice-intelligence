@@ -75,7 +75,7 @@ with st.container(key="card_table"):
             st.switch_page(st.session_state.pages["upload"])
         st.stop()
 
-    W = [1.75, 1.85, 0.95, 1.25, 2.4, 0.65]
+    W = [1.7, 1.9, 1.0, 1.35, 3.0, 0.7]
     st.markdown("<div class='z-thead'>" + "".join(f"<div style='flex:{w} 1 0'>{h}</div>" for w, h in zip(W + [1.0], ["Invoice", "Vendor", "<div style='text-align:right;padding-right:14px'>Amount</div>", "Status", "Reason", "Date", "Action"]))
                 + "</div>", unsafe_allow_html=True)
     for r in data:
@@ -91,7 +91,7 @@ with st.container(key="card_table"):
                      ui.pill(r, with_sub=True),
                      f"<div class='z-reason' title='{html.escape(reason)}'>{html.escape(reason)}</div>",
                      f"<span class='z-muted'>{date}</span>"]
-            c1.markdown("<div style='display:flex;flex-direction:row;align-items:center;gap:10px;min-height:3rem'>"
+            c1.markdown("<div style='display:flex;flex-direction:row;align-items:center;gap:10px;min-height:3.2rem'>"
                         + "".join(f"<div class='z-cell' style='flex:{w} 1 0;min-width:0'>{x}</div>" for w, x in zip(W, cells)) + "</div>",
                         unsafe_allow_html=True)
             if c2.button("Open", key=f"open_{r['id']}", icon=":material/arrow_forward:"):

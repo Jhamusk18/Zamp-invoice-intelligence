@@ -22,9 +22,9 @@ STATIC = Path(__file__).parent / "static"
 
 CSS = """
 <style>
-:root { --navy:#0B1B3A; --navy2:#13285A; --blue:#2563EB; --blue2:#3B82F6; --sky:#EAF1FF; --bg:#F4F7FC; --card:#FFFFFF;
-        --line:#DCE4F2; --muted:#5B6B86; --txt:#0F1B33;
-        --green:#15803D; --greenbg:#E8F7EE; --amber:#B45309; --amberbg:#FFF4E0; --red:#B91C1C; --redbg:#FDECEC; }
+:root { --navy:#0B1534; --navy2:#16255A; --blue:#2F5BEA; --blue2:#4C7DF0; --sky:#EEF3FF; --bg:#F5F7FB; --card:#FFFFFF;
+        --line:#E2E8F2; --muted:#64748B; --txt:#0F172A;
+        --green:#0F9F6E; --greenbg:#E7F6EF; --amber:#C9741B; --amberbg:#FDF1E3; --red:#D63A52; --redbg:#FCEBEE; }
 
 /* ---------- top bar (dark) ---------- */
 header[data-testid="stHeader"] { background: var(--navy) !important; height: 3.6rem; border-bottom: 1px solid #1E3570; }
@@ -33,7 +33,8 @@ header[data-testid="stHeader"] a[aria-current="page"] { background: rgba(59,130,
 header[data-testid="stHeader"] a[aria-current="page"] span, header[data-testid="stHeader"] a[aria-current="page"] p { color: #fff !important; font-weight: 600; }
 header[data-testid="stHeader"] button svg { fill: #D7E3FF; color: #D7E3FF; }
 [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"] { display: none; }
-.block-container { padding-top: 4.6rem; max-width: 1320px; }
+html { font-size: 17px; }
+.block-container { padding: 4.4rem 3rem 3rem; max-width: 1620px; }
 .stApp { background: var(--bg); }
 h1, h2, h3, h4 { letter-spacing: -0.02em; color: var(--txt); }
 h1 { font-size: 2rem !important; font-weight: 750 !important; }
@@ -47,30 +48,28 @@ div[data-testid="stVerticalBlockBorderWrapper"] { border-radius: 14px; }
   box-shadow: 0 1px 3px rgba(15,27,51,.05); }
 
 .z-pill { display:inline-flex; align-items:center; gap:6px; padding: 3px 11px; border-radius: 999px; font-size: .8rem; font-weight: 650; white-space: nowrap; }
-.z-pill.APPROVED { background: var(--greenbg); color: var(--green); }
-.z-pill.FLAGGED  { background: var(--amberbg); color: var(--amber); }
-.z-pill.REJECTED { background: var(--redbg); color: var(--red); }
+.z-pill.APPROVED { background: var(--greenbg); color: #0B7A55; }
+.z-pill.FLAGGED  { background: var(--amberbg); color: #A65B10; }
+.z-pill.REJECTED { background: var(--redbg); color: #B8263E; }
 .z-pill.ERROR    { background: #EEF1F6; color: var(--muted); }
 .z-pill .dot { width:7px; height:7px; border-radius:50%; background: currentColor; }
 .z-tag { display:inline-block; font-size:.68rem; padding:0 6px; border-radius:6px; background: var(--sky); color: var(--blue); font-weight:600; margin-top:2px; }
 .z-sublabel { display:block; font-size:.74rem; color: var(--muted); margin-top:3px; }
 
-.z-kpi { border-radius: 16px; padding: 18px 20px; display:flex; gap: 16px; align-items:center; border: 1px solid transparent;
-         box-shadow: 0 6px 18px rgba(15,27,51,.06); position: relative; overflow: hidden; }
-.z-kpi::after { content:""; position:absolute; right:-30px; bottom:-40px; width: 180px; height: 110px; border-radius: 50%; opacity: .35; }
-.z-kpi .ico { width: 52px; height: 52px; border-radius: 14px; flex: none; display:flex; align-items:center; justify-content:center; }
-.z-kpi .ico svg { width: 28px; height: 28px; }
-.z-kpi .t { font-size: .95rem; font-weight: 700; }
-.z-kpi .v { font-size: 1.75rem; font-weight: 800; line-height: 1.15; color: var(--txt); margin: 2px 0; font-variant-numeric: tabular-nums; }
-.z-kpi .n { font-size: .86rem; color: #475569; }
-.z-kpi.green { background: linear-gradient(135deg, #F1FBF5 0%, #E2F6EA 100%); border-color: #CBEBD7; } .z-kpi.green::after { background: #BFE8CF; }
-.z-kpi.green .ico { background: #D7F2E1; color: #16A34A; } .z-kpi.green .t { color: #15803D; }
-.z-kpi.amber { background: linear-gradient(135deg, #FFF9EF 0%, #FEEFD9 100%); border-color: #F6DDB0; } .z-kpi.amber::after { background: #FBDDAA; }
-.z-kpi.amber .ico { background: #FDE7C3; color: #D97706; } .z-kpi.amber .t { color: #B45309; }
-.z-kpi.red { background: linear-gradient(135deg, #FFF4F4 0%, #FDE5E5 100%); border-color: #F5CDCD; } .z-kpi.red::after { background: #F9CACA; }
-.z-kpi.red .ico { background: #FBD5D5; color: #DC2626; } .z-kpi.red .t { color: #B91C1C; }
-.z-kpi.blue { background: linear-gradient(135deg, #F3F7FF 0%, #E6EEFE 100%); border-color: #CFDCF7; } .z-kpi.blue::after { background: #C9D9FB; }
-.z-kpi.blue .ico { background: #DCE7FD; color: #2563EB; } .z-kpi.blue .t { color: #1D4ED8; }
+.z-kpi { background:#fff; border: 1px solid var(--line); border-radius: 18px; padding: 20px 22px 18px; box-shadow: 0 10px 30px rgba(15,23,42,.06); }
+.z-kpi .hd { display:flex; align-items:center; gap: 12px; }
+.z-kpi .ico { width: 42px; height: 42px; border-radius: 12px; flex: none; display:flex; align-items:center; justify-content:center; }
+.z-kpi .ico svg { width: 22px; height: 22px; }
+.z-kpi .t { font-size: .95rem; font-weight: 700; color: var(--txt); }
+.z-kpi .cnt { margin-left:auto; font-size: .8rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+.z-kpi .v { font-size: 2.1rem; font-weight: 800; line-height: 1.1; color: var(--txt); margin: 14px 0 12px; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.z-kpi .bar { height: 6px; border-radius: 999px; background: #EEF2F8; overflow: hidden; }
+.z-kpi .bar span { display:block; height: 100%; border-radius: 999px; }
+.z-kpi .n { font-size: .82rem; color: var(--muted); margin-top: 8px; }
+.z-kpi.green .ico, .z-kpi.green .cnt { background: var(--greenbg); color: var(--green); } .z-kpi.green .bar span { background: var(--green); }
+.z-kpi.amber .ico, .z-kpi.amber .cnt { background: var(--amberbg); color: var(--amber); } .z-kpi.amber .bar span { background: #E8963A; }
+.z-kpi.red .ico, .z-kpi.red .cnt { background: var(--redbg); color: var(--red); } .z-kpi.red .bar span { background: var(--red); }
+.z-kpi.blue .ico, .z-kpi.blue .cnt { background: var(--sky); color: var(--blue); } .z-kpi.blue .bar span { background: var(--blue); }
 
 /* stepper */
 .z-track { display:flex; align-items:flex-start; justify-content:space-between; margin: 6px 0 4px; }
@@ -109,19 +108,19 @@ div[data-testid="stVerticalBlockBorderWrapper"] { border-radius: 14px; }
 /* history: one table card */
 .st-key-card_table { background:#fff; border:1px solid var(--line); border-radius: 18px; padding: 16px 18px 12px; box-shadow: 0 8px 24px rgba(15,27,51,.06); }
 .z-tabletitle { font-size: 1.12rem; font-weight: 800; color: var(--txt); display:flex; align-items:center; gap: 10px; }
-.z-count { font-size: .76rem; font-weight: 700; background: #E6EEFE; color: #1D4ED8; border-radius: 999px; padding: 3px 11px; }
-.z-thead { display:flex; color: #475569; font-size:.74rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em;
-           padding: 11px 14px; background: #EEF3FC; border-radius: 12px; margin: 10px 0 2px; }
-[class*="st-key-row_"] { border-bottom: 1px solid #EEF2F8; padding: 2px 14px !important; transition: background .12s; }
+.z-count { font-size: .76rem; font-weight: 700; background: #E6EEFE; color: #2449C9; border-radius: 999px; padding: 3px 11px; }
+.z-thead { display:flex; color: #475569; font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.07em;
+           padding: 12px 16px; background: #F1F4FA; border-radius: 12px; margin: 12px 0 4px; }
+[class*="st-key-row_"] { border-bottom: 1px solid #EEF2F8; padding: 8px 16px !important; transition: background .12s; }
 [class*="st-key-row_"]:hover { background: #F6F9FF; }
 [class*="st-key-row_"] [data-testid="stMarkdownContainer"] p { margin: 0; }
 [class*="st-key-row_"] [data-testid="stMarkdown"], [class*="st-key-row_"] [data-testid="stElementContainer"] { margin-bottom: 0 !important; }
-[class*="st-key-row_"] .stButton > button { background: #EAF1FF; color: #1D4ED8; border: 1px solid #D3E0FB; border-radius: 999px; padding: 3px 14px; white-space: nowrap;
+[class*="st-key-row_"] .stButton > button { background: #EAF1FF; color: #2449C9; border: 1px solid #D3E0FB; border-radius: 999px; padding: 3px 14px; white-space: nowrap;
   min-height: 0; font-weight: 700; box-shadow: 0 2px 6px rgba(37,99,235,.08); }
-[class*="st-key-row_"] .stButton > button:hover { background: #2563EB; color: #fff; border-color: #2563EB; }
+[class*="st-key-row_"] .stButton > button:hover { background: #2F5BEA; color: #fff; border-color: #2F5BEA; }
 [class*="st-key-row_"] .stButton > button p, [class*="st-key-row_"] .stButton > button span { color: inherit !important; font-weight: 700; }
 .z-cell { font-size: .9rem; color: var(--txt); line-height: 1.3; padding-right: 8px; }
-.z-reason { font-size: .86rem; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.z-reason { font-size: .86rem; color: #334155; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.35; }
 .z-file { display:flex; align-items:center; gap: 11px; min-width: 0; }
 .z-file .doc { width: 32px; height: 36px; flex: none; border-radius: 8px; background: #FDECEC; display:flex; align-items:center; justify-content:center; }
 .z-file .doc svg { width: 20px; height: 22px; }
@@ -135,7 +134,7 @@ div[data-testid="stVerticalBlockBorderWrapper"] { border-radius: 14px; }
 /* ask panel */
 [class*="st-key-ask_"] { background:#fff; border: 1.5px solid #BFD3FF; border-radius: 16px; padding: 16px 16px 10px; }
 .st-key-ask_glow { animation: zglow 2.2s ease-out 1; }
-@keyframes zglow { 0%{ box-shadow: 0 0 0 0 rgba(37,99,235,.55); border-color:#2563EB } 100%{ box-shadow: 0 0 0 18px rgba(37,99,235,0); border-color:#BFD3FF } }
+@keyframes zglow { 0%{ box-shadow: 0 0 0 0 rgba(37,99,235,.55); border-color:#2F5BEA } 100%{ box-shadow: 0 0 0 18px rgba(37,99,235,0); border-color:#BFD3FF } }
 [class*="st-key-ask_"] .stButton > button { min-height: 2.9rem; justify-content: flex-start; text-align: left; border-radius: 12px; border-color:#D6E2FA; background:#F7FAFF; }
 [class*="st-key-ask_"] .stButton > button:hover { border-color: var(--blue2); background: var(--sky); }
 .z-teaser-q { border:1px dashed #CBD6EA; border-radius: 12px; padding: 10px 12px; margin: 6px 0; color:#9AA8C0; font-size:.9rem; }
@@ -145,17 +144,17 @@ div[data-testid="stChatMessage"] { background: #F7FAFF; border: 1px solid #E3EBF
 [data-testid="stFileUploaderDropzone"] { background: linear-gradient(180deg, #EEF4FF 0%, #E3EDFD 100%); border: 2px dashed #9FB3D1; border-radius: 16px;
   padding: 56px 30px; min-height: 300px; display:flex; flex-direction: column; align-items:center; justify-content:center; gap: 22px; text-align:center;
   box-shadow: 0 8px 24px rgba(37,99,235,.08); transition: all .15s; }
-[data-testid="stFileUploaderDropzone"]:hover { border-color: #2563EB; background: linear-gradient(180deg, #E8F0FF 0%, #DCE8FD 100%); }
+[data-testid="stFileUploaderDropzone"]:hover { border-color: #2F5BEA; background: linear-gradient(180deg, #E8F0FF 0%, #DCE8FD 100%); }
 [data-testid="stFileUploaderDropzone"]::before { content: ""; width: 66px; height: 80px;
   background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 66 80'><path d='M8 3h34l21 21v47a6 6 0 0 1-6 6H8a6 6 0 0 1-6-6V9a6 6 0 0 1 6-6z' fill='%23DCE7FB' stroke='%234F7BD9' stroke-width='3' stroke-linejoin='round'/><path d='M42 3v15a6 6 0 0 0 6 6h15' fill='%23C3D5F6' stroke='%234F7BD9' stroke-width='3' stroke-linejoin='round'/><path d='M33 60V36M22 46l11-11 11 11' fill='none' stroke='%234F7BD9' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/></svg>") no-repeat center / contain; }
 [data-testid="stFileUploaderDropzoneInstructions"] { display: none; }
-[data-testid="stFileUploaderDropzone"] button { background: linear-gradient(180deg, #2F6BF0, #1D4ED8); color: #fff; border: 0; padding: 10px 26px;
+[data-testid="stFileUploaderDropzone"] button { background: linear-gradient(180deg, #2F6BF0, #2449C9); color: #fff; border: 0; padding: 10px 26px;
   border-radius: 10px; font-weight: 650; font-size: 1rem; box-shadow: 0 6px 14px rgba(29,78,216,.35); }
-[data-testid="stFileUploaderDropzone"] button:hover { background: linear-gradient(180deg, #3B76F5, #2563EB); color: #fff; transform: translateY(-1px); }
+[data-testid="stFileUploaderDropzone"] button:hover { background: linear-gradient(180deg, #3B76F5, #2F5BEA); color: #fff; transform: translateY(-1px); }
 [data-testid="stFileUploaderDropzone"] button p, [data-testid="stFileUploaderDropzone"] button span { color: #fff !important; }
 [data-testid="stFileUploader"] > label p { font-size: 1.05rem; font-weight: 650; color: #0F1B33; }
 .stButton > button[kind="primary"] { background: var(--blue); border: 0; }
-.stButton > button[kind="primary"]:hover { background: #1D4ED8; }
+.stButton > button[kind="primary"]:hover { background: #2449C9; }
 
 /* decision made: a clear coloured strip */
 .z-decided { border-radius: 12px; padding: 12px 14px; margin: 4px 0 10px; border: 1px solid transparent; }
@@ -229,12 +228,14 @@ PDF_SVG = ("<svg viewBox='0 0 20 22'><path d='M4 1h8l5 5v13a2 2 0 0 1-2 2H4a2 2 
 
 
 def kpi(kind, title, amount, count, share=None):
-    sub = f"{count} invoice{'s' if count != 1 else ''}" + (f" · {share:.0%} of value" if share is not None else "")
-    st.markdown(f"<div class='z-kpi {kind}'><div class='ico'>{SVG[kind]}</div><div style='position:relative;z-index:1'><div class='t'>{html.escape(title)}</div>"
-                f"<div class='v'>{inr(amount, decimals=0)}</div><div class='n'>{sub}</div></div></div>", unsafe_allow_html=True)
+    bar = (f"<div class='bar'><span style='width:{max(share, 0.02) * 100:.0f}%'></span></div><div class='n'>{share:.0%} of total value</div>"
+           if share is not None else "")
+    st.markdown(f"<div class='z-kpi {kind}'><div class='hd'><div class='ico'>{SVG[kind]}</div><div class='t'>{html.escape(title)}</div>"
+                f"<div class='cnt'>{count} invoice{'s' if count != 1 else ''}</div></div><div class='v'>{inr(amount, decimals=0)}</div>{bar}</div>",
+                unsafe_allow_html=True)
 
 
-AV = [("#E0EAFF", "#1D4ED8"), ("#E0F2FE", "#0369A1"), ("#DCFCE7", "#15803D"), ("#FCE7F3", "#BE185D"),
+AV = [("#E0EAFF", "#2449C9"), ("#E0F2FE", "#0369A1"), ("#DCFCE7", "#15803D"), ("#FCE7F3", "#BE185D"),
       ("#FFEDD5", "#C2410C"), ("#EDE9FE", "#6D28D9"), ("#CCFBF1", "#0F766E"), ("#FEF3C7", "#B45309")]
 
 
@@ -252,8 +253,8 @@ def file_cell(number, sub):
 
 def stat(kind, title, value, note):
     """A small number card (used where the value isn't money)."""
-    st.markdown(f"<div class='z-kpi {kind}'><div class='ico'>{SVG[kind]}</div><div style='position:relative;z-index:1'><div class='t'>{html.escape(title)}</div>"
-                f"<div class='v'>{html.escape(str(value))}</div><div class='n'>{html.escape(note)}</div></div></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='z-kpi {kind}'><div class='hd'><div class='ico'>{SVG[kind]}</div><div class='t'>{html.escape(title)}</div></div>"
+                f"<div class='v'>{html.escape(str(value))}</div><div class='n'>{html.escape(note)}</div></div>", unsafe_allow_html=True)
 
 
 def secs(x):

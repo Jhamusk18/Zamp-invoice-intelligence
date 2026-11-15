@@ -91,7 +91,7 @@ with left:
             elif cur["run_state"] == "ERROR":
                 h[1].markdown("<div style='text-align:right;color:#B91C1C'>stopped - technical error</div>", unsafe_allow_html=True)
             else:
-                h[1].markdown(f"<div style='text-align:right;color:#2563EB'>⏳ running · {ui.secs(time.time() - t0) if t0 else 'queued'}</div>", unsafe_allow_html=True)
+                h[1].markdown(f"<div style='text-align:right;color:#2F5BEA'>⏳ running · {ui.secs(time.time() - t0) if t0 else 'queued'}</div>", unsafe_allow_html=True)
             ui.stepper(stg, time.time())
             if cur["run_state"] != "QUEUED":
                 with st.expander("Full details of each step", expanded=cur["run_state"] == "ERROR"):

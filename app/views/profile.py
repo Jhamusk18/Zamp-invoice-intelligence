@@ -11,7 +11,7 @@ conn = ui.conn()
 ME = "Demo Reviewer"
 
 c1, c2 = st.columns([0.12, 1])
-c1.markdown("<div style='width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#1D4ED8,#60A5FA);color:#fff;"
+c1.markdown("<div style='width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#2449C9,#60A5FA);color:#fff;"
             "display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;margin-top:18px'>DR</div>",
             unsafe_allow_html=True)
 with c2:
