@@ -118,12 +118,19 @@ def check_html(f, with_cmp=True):
 
 def show_email(action, reason):
     """Ready-to-copy vendor email for this decision (fixed template, no AI). Nothing is sent."""
+    from urllib.parse import quote
     e = explain.reviewer_email(conn, iid, action, reason)
-    st.markdown("**Email to the vendor** <span class='z-muted'>· copy it with the icon and send it from your mail - nothing is sent from here</span>",
-                unsafe_allow_html=True)
-    st.markdown(f"<span class='z-muted'>To: {html.escape(e['to'])} (address on file) · Subject: {html.escape(e['subject'])}</span>", unsafe_allow_html=True)
-    st.code(e["body"], language=None, wrap_lines=True)
-
+    with st.container(key=f"mail_{action}"):
+        st.markdown(f"<div class='z-mailhead'><span>✉️</span><b>Email to the vendor</b><span class='z-draft'>Draft · not sent</span></div>"
+                    f"<div class='z-mailfield'><span>To</span><div>{html.escape(e['to'])} <i class='z-muted'>(address on file)</i></div></div>"
+                    f"<div class='z-mailfield'><span>Subject</span><div><b>{html.escape(e['subject'])}</b></div></div>", unsafe_allow_html=True)
+        st.code(e["body"], language=None, wrap_lines=True)
+        c = st.columns([1.7, 3], vertical_alignment="center")
+        if "@" in e["to"]:
+            c[0].link_button("Open in email app", f"mailto:{e['to']}?subject={quote(e['subject'])}&body={quote(e['body'])}",
+                             icon=":material/forward_to_inbox:", use_container_width=True)
+        c[1].markdown("<span class='z-muted'>Copy with the icon on the text, or open it in your email app. Nothing is sent from here.</span>",
+                      unsafe_allow_html=True)
 
 with right:
     ui.verdict(inv, helper.next_step(conn, iid))
@@ -140,9 +147,14 @@ with right:
                             "so it can't be approved with a click.</span>", unsafe_allow_html=True)
             else:
                 note = q.reviewer_note(conn, iid)
-                who = f" by {note['actor']} on {datetime.fromtimestamp(note['ts']):%d %b %H:%M}" if note else ""
-                st.markdown(f"<span class='z-muted'>Already decided{who}"
-                            + (f": <b>{html.escape(note['details'].get('reason', ''))}</b>" if note else "") + "</span>", unsafe_allow_html=True)
+                if note:
+                    ok = note["action"] == "REVIEWER_APPROVE"
+                    st.markdown(f"<div class='z-decided {'APPROVED' if ok else 'REJECTED'}'>"
+                                f"<div class='top'><span class='z-pill {'APPROVED' if ok else 'REJECTED'}'><span class='dot'></span>{'Approved' if ok else 'Rejected'} by reviewer</span>"
+                                f"<span class='z-muted'>{html.escape(note['actor'])} · {datetime.fromtimestamp(note['ts']):%d %b %Y, %H:%M}</span></div>"
+                                f"<div class='why'>Reason: <b>{html.escape(note['details'].get('reason', ''))}</b></div></div>", unsafe_allow_html=True)
+                else:
+                    st.markdown("<span class='z-muted'>Already decided. See the Audit Trail.</span>", unsafe_allow_html=True)
                 if note:
                     show_email("approve" if note["action"] == "REVIEWER_APPROVE" else "reject", note["details"].get("reason", ""))
         else:

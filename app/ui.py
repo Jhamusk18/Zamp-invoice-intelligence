@@ -129,6 +129,28 @@ div[data-testid="stChatMessage"] { background: #F7FAFF; border: 1px solid #E3EBF
 .stButton > button[kind="primary"] { background: var(--blue); border: 0; }
 .stButton > button[kind="primary"]:hover { background: #1D4ED8; }
 
+/* decision made: a clear coloured strip */
+.z-decided { border-radius: 12px; padding: 12px 14px; margin: 4px 0 10px; border: 1px solid transparent; }
+.z-decided.APPROVED { background: var(--greenbg); border-color: #BFE8CD; } .z-decided.REJECTED { background: var(--redbg); border-color: #F6C9C9; }
+.z-decided .top { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.z-decided .why { margin-top: 6px; color: var(--txt); font-size: .95rem; }
+
+/* the vendor email: looks like an email, clearly separate from the form */
+[class*="st-key-mail_"] { background:#fff; border:1px solid #CFDCF5; border-radius:14px; overflow:hidden; padding:0 !important; gap: 0 !important;
+  box-shadow: 0 8px 22px rgba(15,27,51,.08); margin-top: 6px; }
+.z-mailhead { display:flex; align-items:center; gap:10px; background: linear-gradient(90deg,#0B1B3A,#1E3A8A); padding: 12px 16px; }
+.z-mailhead b { color:#fff; font-size: .98rem; } .z-mailhead span { color:#fff; }
+.z-draft { margin-left:auto; font-size:.72rem; background: rgba(255,255,255,.16); color:#DCE7FF !important; padding:2px 9px; border-radius:999px; }
+.z-mailfield { display:flex; gap:12px; padding: 9px 16px; border-bottom: 1px solid #EDF1F8; font-size: .9rem; color: var(--txt); background: #F8FAFE; }
+.z-mailfield > span { width: 62px; flex: none; color: var(--muted); font-weight: 600; }
+[class*="st-key-mail_"] [data-testid="stCode"] { margin: 0 !important; }
+[class*="st-key-mail_"] [data-testid="stMarkdown"], [class*="st-key-mail_"] [data-testid="stElementContainer"] { margin-bottom: 0 !important; }
+[class*="st-key-mail_"] [data-testid="stMarkdownContainer"] { overflow: visible; margin-bottom: 0 !important; }
+[class*="st-key-mail_"] [data-testid="stCode"] pre { background: #fff !important; border-radius: 0 !important; padding: 16px 18px !important; }
+[class*="st-key-mail_"] [data-testid="stCode"] pre, [class*="st-key-mail_"] [data-testid="stCode"] code {
+  font-family: "Source Sans Pro", "Segoe UI", sans-serif !important; font-size: .95rem !important; line-height: 1.6 !important; color: var(--txt) !important; white-space: pre-wrap !important; }
+[class*="st-key-mail_"] [data-testid="stHorizontalBlock"] { padding: 10px 16px 14px; border-top: 1px solid #EDF1F8; background: #F8FAFE; }
+
 /* review: keep the PDF in view while scrolling */
 .st-key-pdfpane { position: sticky; top: 4.4rem; }
 </style>
