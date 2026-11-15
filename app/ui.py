@@ -212,6 +212,7 @@ div[data-testid="stChatMessage"] { background: #F7FAFF; border: 1px solid #E3EBF
 .rv-body { border:1px solid var(--line); border-top: 0; border-radius: 0 0 12px 12px; margin-top: -17px; padding: 14px 16px; color: var(--txt);
            line-height: 1.6; font-size: .95rem; max-height: 300px; overflow: auto; }
 .st-key-card_email iframe { display:block; margin-top: 0; }
+.rv-label { font-weight: 700; color: var(--txt); margin: 14px 0 4px; }
 .rv-more { font-size: 1.3rem; font-weight: 800; color: var(--txt); margin: 18px 0 2px; }
 
 /* checks, plain version */
