@@ -9,6 +9,22 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 st.set_page_config(page_title="Zamp AP Assistant", page_icon=str(Path(__file__).parent / "static" / "logo_icon.svg"),
                    layout="wide", initial_sidebar_state="collapsed")
 
+import importlib  # noqa: E402
+import os  # noqa: E402
+
+# Streamlit re-runs this file on every interaction, but modules it imports stay in memory. After a deploy the server can keep
+# serving the OLD styles/logic while pages use the new code. Re-load any of our own modules whose file changed on disk.
+_ORDER = ["core.money", "core.db", "core.models", "core.document", "core.policy", "core.rules", "core.decision", "core.llm",
+          "core.explain", "core.queries", "core.helper", "core.pipeline", "core.seed", "core.whatif", "core.evaluate",
+          "app.ui", "app.helper_panel", "app.sections.rules", "app.sections.assumptions"]
+for _name in _ORDER:
+    _m = sys.modules.get(_name)
+    if _m is not None and getattr(_m, "__file__", None):
+        _mt = os.path.getmtime(_m.__file__)
+        if getattr(_m, "_zamp_mtime", None) != _mt:  # never stamped (old process) or changed on disk
+            _m = importlib.reload(_m)
+        _m._zamp_mtime = os.path.getmtime(_m.__file__)
+
 from app import ui  # noqa: E402
 
 ui.inject_css()
