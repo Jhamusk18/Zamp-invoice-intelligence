@@ -7,6 +7,7 @@ import streamlit as st
 
 from app import helper_panel, ui
 from core import db, decision, explain, helper, queries as q
+from core.helper import plain_title, short_text
 from core.decision import LABEL
 from core.money import inr, mask_account
 
@@ -67,64 +68,6 @@ def plain(f):
     if c == "DOC_TYPE":
         return f"This document is a {a_.lower()}."
     return f"On the invoice: {a_}; our records: {e or '—'}."
-
-TITLES = {"DOC_TYPE": "Document type", "REQUIRED_FIELDS": "Required details", "EVIDENCE": "Values found in the PDF", "HIDDEN_TEXT": "Hidden text",
-          "READS_AGREE": "Second read", "ARITHMETIC": "Amounts add up", "VENDOR": "Vendor", "TAX_ID": "GSTIN", "BANK": "Bank account",
-          "DUPLICATE": "Duplicate", "PO_MATCH": "Purchase order", "PO_LINES": "Items vs order", "PO_BALANCE": "Order budget",
-          "RECEIPT": "Goods received", "DATES": "Dates", "CURRENCY": "Currency", "AUTO_LIMIT": "Approval limit"}
-
-
-def plain_title(f):
-    return TITLES.get(f["check_id"], f["details"].get("label", f["check_id"]))
-
-
-def _first(msg):
-    import re
-    t = msg.split(". ")[0].rstrip(".")
-    return re.sub(r"\s*\((score|similarity|allowed|PO value|approved|paid)[^)]*\)", "", t) + "."
-
-
-def short_text(f):
-    """One plain sentence a non-technical reviewer can act on."""
-    code, d = f["reason_code"], f["details"]
-    if code == "BANK_CHANGED":
-        return f"The invoice asks us to pay {f['actual']}, but our records have {f['expected']}. Call the vendor before paying."
-    if code == "HIDDEN_TEXT":
-        return "The PDF hides text that tries to get it approved. It was ignored, but treat this invoice as suspicious."
-    if code == "PO_INFERRED":
-        best = (d.get("candidates") or [{}])[0].get("po_number", "a likely order")
-        return f"No PO number on the invoice. Best guess: {best} - please confirm."
-    if code == "NO_PO":
-        return "No PO number on the invoice, and no matching order was found."
-    if code in ("LINE_NOT_ON_PO", "PRICE_VARIANCE", "LINE_MISMATCH", "PRICE_OVER_LIMIT", "QTY_OVER_PO"):
-        bad = [x for x in d.get("lines", []) if x.get("result") != "PASS"]
-        if bad:
-            x = bad[0]
-            note = x["note"].split(" (")[0].replace("vs PO", "vs the order").replace("not on the PO", "isn't on the order").replace("on the PO", "on the order")
-            more = f" (+{len(bad) - 1} more)" if len(bad) > 1 else ""
-            return f"{x['invoice_line']}: {note}{more}."
-    if code == "QTY_EXCEEDS_RECEIPT":
-        rows = [r for r in d.get("rows", []) if r["invoiced"] > r["received"] - r.get("billed_before", 0)]
-        if rows:
-            r = rows[0]
-            return f"Billed {r['invoiced']:g}, but only {max(r['received'] - r.get('billed_before', 0), 0):g} received and not yet billed."
-    if code == "DUPLICATE_EXACT":
-        return f"We already have this invoice ({f['actual']} is the same as an earlier one). Don't pay it twice."
-    if code == "OVER_AUTO_LIMIT":
-        return f"{f['actual']} is above the {f['expected'].replace('≤ ', '')} limit, so a person must approve it."
-    if code == "UNVERIFIED_FIELD":
-        return "Some values couldn't be found in the PDF. Compare them with the document yourself."
-    if code == "VENDOR_MATH_ERROR":
-        return "The invoice's own numbers don't add up - ask the vendor for a corrected invoice."
-    if code == "VENDOR_LOOKALIKE":
-        return "The name looks like one of our vendors, but it's a different company. Possible impersonation."
-    if code == "UNKNOWN_VENDOR":
-        return "This vendor isn't on our approved list."
-    if code == "VENDOR_BLOCKED":
-        return "This vendor is blocked in our records - don't pay."
-    if code == "NOT_AN_INVOICE":
-        return "This is not an invoice (for example a quotation), so there's nothing to pay."
-    return _first(f["message"])
 
 
 def check_html(f, with_cmp=True):

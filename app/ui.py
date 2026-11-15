@@ -134,14 +134,41 @@ div[data-testid="stVerticalBlockBorderWrapper"] { border-radius: 14px; }
 .z-vend .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .z-amt { display:block; text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; padding-right: 14px; }
 
-/* ask panel */
-[class*="st-key-ask_"] { background:#fff; border: 1.5px solid #BFD3FF; border-radius: 16px; padding: 16px 16px 10px; }
+/* chat widget (Zamp Assistant) */
+[class*="st-key-ask_"] { background:#fff; border: 1px solid #DCE5F5; border-radius: 18px; padding: 0 0 12px; overflow: hidden; gap: 10px;
+  box-shadow: 0 10px 30px rgba(15,35,90,.10); }
 .st-key-ask_glow { animation: zglow 2.2s ease-out 1; }
-@keyframes zglow { 0%{ box-shadow: 0 0 0 0 rgba(37,99,235,.55); border-color:#2F5BEA } 100%{ box-shadow: 0 0 0 18px rgba(37,99,235,0); border-color:#BFD3FF } }
-[class*="st-key-ask_"] .stButton > button { min-height: 2.9rem; justify-content: flex-start; text-align: left; border-radius: 12px; border-color:#D6E2FA; background:#F7FAFF; }
-[class*="st-key-ask_"] .stButton > button:hover { border-color: var(--blue2); background: var(--sky); }
-.z-teaser-q { border:1px dashed #CBD6EA; border-radius: 12px; padding: 10px 12px; margin: 6px 0; color:#9AA8C0; font-size:.9rem; }
-div[data-testid="stChatMessage"] { background: #F7FAFF; border: 1px solid #E3EBFA; border-radius: 12px; }
+@keyframes zglow { 0%{ box-shadow: 0 0 0 0 rgba(37,99,235,.55) } 100%{ box-shadow: 0 0 0 18px rgba(37,99,235,0) } }
+[class*="st-key-ask_"] > div { padding-left: 14px; padding-right: 14px; }
+[class*="st-key-ask_"] > div:first-child { padding: 0; }
+.zc-head { display:flex; align-items:center; gap: 12px; padding: 18px 18px 30px; color:#fff; position: relative;
+  background: linear-gradient(135deg, #1E3FBF 0%, #2F5BEA 55%, #4C82FF 100%); }
+.zc-head::after { content:""; position:absolute; left:0; right:0; bottom:-1px; height: 18px; background:#fff;
+  border-radius: 100% 100% 0 0 / 100% 100% 0 0; }
+.zc-av { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,.18); border: 2px solid rgba(255,255,255,.55);
+  display:flex; align-items:center; justify-content:center; position: relative; flex: none; }
+.zc-av i { position:absolute; right: -1px; bottom: 1px; width: 11px; height: 11px; border-radius: 50%; background:#22C58B; border: 2px solid #2F5BEA; }
+.zc-pre { font-size: .78rem; opacity: .85; line-height: 1.1; }
+.zc-name { font-size: 1.12rem; font-weight: 800; line-height: 1.25; }
+.zc-sub { font-size: .76rem; opacity: .8; }
+.zc-body { padding: 0 14px 4px; }
+.zc-msg { max-width: 86%; padding: 10px 14px; border-radius: 16px; margin: 8px 0; font-size: .9rem; line-height: 1.45; width: fit-content; }
+.zc-msg.bot { background:#EEF1F6; color:#1B2540; border-bottom-left-radius: 4px; }
+.zc-msg.me { background:#2F5BEA; color:#fff; margin-left: auto; border-bottom-right-radius: 4px; }
+.zc-pills { display:flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.zc-pill { border: 1.5px solid #2F5BEA; color:#2F5BEA; border-radius: 999px; padding: 6px 14px; font-size: .85rem; font-weight: 600; }
+.zc-pill.off { border-color:#C8D4EA; color:#9AA8C0; }
+[class*="st-key-zcpills_"] .stButton > button { border-radius: 999px; border: 1.5px solid #2F5BEA; color:#2F5BEA; background:#fff;
+  min-height: 2.1rem; padding: 4px 14px; font-weight: 600; font-size: .85rem; }
+[class*="st-key-zcpills_"] .stButton > button:hover { background:#2F5BEA; color:#fff; }
+[class*="st-key-zcpills_"] .stButton > button[kind="tertiary"] { border-color: transparent; color:#7A88A6; }
+[class*="st-key-zcpills_"] .stButton > button[kind="tertiary"]:hover { background:#F1F4FA; color:#1B2540; }
+[class*="st-key-ask_"] [data-testid="stForm"] { padding: 0; border-top: 1px solid #E8EDF6; padding-top: 10px; }
+[class*="st-key-zcinput_"] [data-testid="stTextInput"] input { border-radius: 999px; }
+[class*="st-key-zcinput_"] [data-testid="InputInstructions"] { display:none; }
+[class*="st-key-zcinput_"] [data-testid="stTextInput"] > div > div { border-radius: 999px; background:#F5F7FB; }
+[class*="st-key-zcinput_"] [data-testid="stFormSubmitButton"] button { width: 42px; height: 42px; min-height: 42px; border-radius: 50%; padding: 0;
+  font-size: 1.05rem; box-shadow: 0 4px 12px rgba(47,91,234,.35); }
 
 /* upload drop zone: soft blue fill, dashed border, document icon, raised blue button */
 [data-testid="stFileUploaderDropzone"] { background: linear-gradient(180deg, #EEF4FF 0%, #E3EDFD 100%); border: 2px dashed #9FB3D1; border-radius: 16px;

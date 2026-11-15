@@ -13,15 +13,15 @@ from core.decision import LABEL
 from core.money import inr, mask_account
 
 MENU = {  # order = order shown (most useful first)
-    "decided": "Why was this held?",
-    "next": "What should I do next?",
-    "whats_on": "What's on this invoice?",
-    "compare": "Compare with our order",
-    "source": "Where did this come from?",
+    "decided": "Why?",
+    "next": "What should I do?",
+    "whats_on": "Invoice details",
+    "compare": "Compare with order",
+    "source": "Was it read correctly?",
     "start": "Start over",
 }
-DECIDED_LABEL = {"APPROVED": "Why is it ready to pay?", "FLAGGED": "Why was this held?", "REJECTED": "Why was it blocked?"}
-OUT_OF_SCOPE = "I can only help with this invoice's details and decision. Try one of the options below."
+DECIDED_LABEL = {"APPROVED": "Why is it OK?", "FLAGGED": "Why is it held?", "REJECTED": "Why is it blocked?"}
+OUT_OF_SCOPE = "Sorry, I can only help with this invoice 🙂 Pick one of the options below."
 
 KEYWORDS = [  # free-typed text -> menu item (no AI involved)
     ("compare", r"\b(compare|order|po|purchase|received|receipt|grn|quantity|qty)\b"),
@@ -73,7 +73,9 @@ def next_step(conn, iid):
 
 
 def greeting(inv):
-    return f"I've checked invoice **{inv['invoice_number'] or inv['filename']}** from **{inv['vendor_name'] or 'an unknown vendor'}**. " + summary_sentence(inv)
+    state = {"APPROVED": "It's **ready to pay** ✅", "FLAGGED": "It **needs your attention** ⚠️", "REJECTED": "It's **blocked** ⛔"}[inv["status"]]
+    return (f"Hi! 👋 I've checked invoice **{inv['invoice_number'] or inv['filename']}** from {inv['vendor_name'] or 'an unknown vendor'}. "
+            f"{state}\n\nLet me know what you'd like to know.")
 
 
 def ensure_started(conn, iid):
@@ -86,8 +88,7 @@ def ask(conn, iid, key=None, text=None):
     if text is not None:
         _save(conn, iid, "user", text)
         if re.search(FORBIDDEN, text.lower()):
-            ans = ("I can't change invoices, approve, reject or send anything. A person does that on the "
-                   "**Review page** with a reason, so it's recorded in the audit trail.")
+            ans = "I can't approve or change anything. You do that with the buttons on the Review page."
             _save(conn, iid, "assistant", ans)
             return ans
         key = next((k for k, pat in KEYWORDS if re.search(pat, text.lower())), None)
@@ -111,35 +112,65 @@ def _save(conn, iid, role, content):
     conn.execute("INSERT INTO chat_messages (invoice_id, ts, role, content) VALUES (?,?,?,?)", (iid, time.time(), role, content))
 
 
-# ------------------------------------------------------------------ answers
+# ------------------------------------------------------------------ plain-language sentences (shared with the Review page)
 
-def _whats_on(conn, iid):
-    i = q.invoice(conn, iid)
-    ls = q.lines(conn, iid)
-    t = [f"**{i['vendor_name']}**" + (f" · GSTIN {i['vendor_gstin']}" if i["vendor_gstin"] else ""),
-         f"- Invoice **{i['invoice_number']}** · dated {i['invoice_date'] or '—'} · due {i['due_date'] or '—'}",
-         f"- PO on invoice: {i['po_reference'] or '*none printed*'}"
-         + (f" · matched to **{i['po_number']}** ({'suggested, needs confirming' if i['po_match_type'] == 'INFERRED' else 'stated on invoice'})" if i["po_number"] else ""),
-         f"- Bank: {mask_account(i['bank_account'])}" + (f" · IFSC {i['ifsc']}" if i["ifsc"] else ""),
-         "", "| Item | Qty | Rate | Amount |", "|---|---:|---:|---:|"]
-    t += [f"| {l['description']} | {l['quantity']:g} | {inr(l['unit_price'])} | {inr(l['amount'])} |" for l in ls]
-    t += ["", f"Subtotal **{inr(i['subtotal'])}** · Tax {inr(i['tax'])} · Total **{inr(i['total'])}**"]
-    return "\n".join(t)
+TITLES = {"DOC_TYPE": "Document type", "REQUIRED_FIELDS": "Required details", "EVIDENCE": "Values found in the PDF", "HIDDEN_TEXT": "Hidden text",
+          "READS_AGREE": "Second read", "ARITHMETIC": "Amounts add up", "VENDOR": "Vendor", "TAX_ID": "GSTIN", "BANK": "Bank account",
+          "DUPLICATE": "Duplicate", "PO_MATCH": "Purchase order", "PO_LINES": "Items vs order", "PO_BALANCE": "Order budget",
+          "RECEIPT": "Goods received", "DATES": "Dates", "CURRENCY": "Currency", "AUTO_LIMIT": "Approval limit"}
 
 
-def _decided(conn, iid):
-    i = q.invoice(conn, iid)
-    fs = q.findings(conn, iid)
-    who = "by the system" if i["decided_by"] == "system" else "by a reviewer"
-    t = [f"**{LABEL[i['status']]}** - decided {who} under policy v{i['policy_version']}.", ""]
-    bad = [f for f in fs if f["result"] in ("WARN", "FAIL")]
-    if bad:
-        t.append("**Needs attention:**")
-        for f in bad:
-            t.append(f"- {'⛔' if f['result'] == 'FAIL' else '⚠️'} **{f['details'].get('label', f['check_id'])}**: {f['message']}")
-    passed = [f["details"].get("label", f["check_id"]) for f in fs if f["result"] == "PASS"]
-    t.append(f"\n**Passed ({len(passed)}):** " + ", ".join(passed))
-    return "\n".join(t)
+def plain_title(f):
+    return TITLES.get(f["check_id"], f["details"].get("label", f["check_id"]))
+
+
+def _first(msg):
+    t = msg.split(". ")[0].rstrip(".")
+    return re.sub(r"\s*\((score|similarity|allowed|PO value|approved|paid)[^)]*\)", "", t) + "."
+
+
+def short_text(f):
+    """One plain sentence a non-technical reviewer can act on."""
+    code, d = f["reason_code"], f["details"]
+    if code == "BANK_CHANGED":
+        return f"The invoice asks us to pay {f['actual']}, but our records have {f['expected']}. Call the vendor before paying."
+    if code == "HIDDEN_TEXT":
+        return "The PDF hides text that tries to get it approved. It was ignored, but treat this invoice as suspicious."
+    if code == "PO_INFERRED":
+        best = (d.get("candidates") or [{}])[0].get("po_number", "a likely order")
+        return f"No PO number on the invoice. Best guess: {best} - please confirm."
+    if code == "NO_PO":
+        return "No PO number on the invoice, and no matching order was found."
+    if code in ("LINE_NOT_ON_PO", "PRICE_VARIANCE", "LINE_MISMATCH", "PRICE_OVER_LIMIT", "QTY_OVER_PO"):
+        bad = [x for x in d.get("lines", []) if x.get("result") != "PASS"]
+        if bad:
+            x = bad[0]
+            note = x["note"].split(" (")[0].replace("vs PO", "vs the order").replace("not on the PO", "isn't on the order").replace("on the PO", "on the order")
+            more = f" (+{len(bad) - 1} more)" if len(bad) > 1 else ""
+            return f"{x['invoice_line']}: {note}{more}."
+    if code == "QTY_EXCEEDS_RECEIPT":
+        rows = [r for r in d.get("rows", []) if r["invoiced"] > r["received"] - r.get("billed_before", 0)]
+        if rows:
+            r = rows[0]
+            return f"Billed {r['invoiced']:g}, but only {max(r['received'] - r.get('billed_before', 0), 0):g} received and not yet billed."
+    if code == "DUPLICATE_EXACT":
+        return f"We already have this invoice ({f['actual']} is the same as an earlier one). Don't pay it twice."
+    if code == "OVER_AUTO_LIMIT":
+        return f"{f['actual']} is above the {f['expected'].replace('≤ ', '')} limit, so a person must approve it."
+    if code == "UNVERIFIED_FIELD":
+        return "Some values couldn't be found in the PDF. Compare them with the document yourself."
+    if code == "VENDOR_MATH_ERROR":
+        return "The invoice's own numbers don't add up - ask the vendor for a corrected invoice."
+    if code == "VENDOR_LOOKALIKE":
+        return "The name looks like one of our vendors, but it's a different company. Possible impersonation."
+    if code == "UNKNOWN_VENDOR":
+        return "This vendor isn't on our approved list."
+    if code == "VENDOR_BLOCKED":
+        return "This vendor is blocked in our records - don't pay."
+    if code == "NOT_AN_INVOICE":
+        return "This is not an invoice (for example a quotation), so there's nothing to pay."
+    return _first(f["message"])
+
 
 
 NEXT_STEP = {
@@ -180,55 +211,89 @@ NEXT_STEP = {
 }
 
 
+# ------------------------------------------------------------------ answers: short, simple English, end with "Anything else?"
+MORE = "\nAnything else?"
+MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+
+def _date(d):
+    return f"{int(d[8:10])} {MON[int(d[5:7]) - 1]} {d[:4]}" if d and len(d) == 10 else "not shown"
+
+
+def _whats_on(conn, iid):
+    i = q.invoice(conn, iid)
+    ls = q.lines(conn, iid)
+    items = "; ".join(f"{l['quantity']:g} × {l['description']}" for l in ls[:2]) + (f" (+{len(ls) - 2} more)" if len(ls) > 2 else "")
+    t = [f"**{i['vendor_name']}** · invoice **{i['invoice_number']}**",
+         f"• Date: {_date(i['invoice_date'])}",
+         f"• Total: **{inr(i['total'], decimals=0)}** (incl. {inr(i['tax'], decimals=0)} GST)",
+         f"• Items: {items}",
+         f"• Order: {i['po_number'] or 'no PO number'}" + (" (our best guess)" if i["po_match_type"] == "INFERRED" else "")]
+    return "\n".join(t) + MORE
+
+
+def _decided(conn, iid):
+    i = q.invoice(conn, iid)
+    fs = q.findings(conn, iid)
+    if i["decided_by"] == "reviewer":
+        note = q.reviewer_note(conn, iid)
+        why = f" Their note: “{note['details'].get('reason', '')}”" if note else ""
+        return f"A reviewer marked it **{LABEL[i['status']]}**.{why}" + MORE
+    bad = sorted([f for f in fs if f["result"] in ("WARN", "FAIL")], key=lambda f: f["result"] != "FAIL")
+    passed = sum(1 for f in fs if f["result"] == "PASS")
+    if not bad:
+        return f"Everything matched ✅ All {passed} checks passed, so it's **Ready to Pay**." + MORE
+    head = "It's **blocked** because:" if i["status"] == "REJECTED" else "It's **on hold** because:"
+    lines = [f"• {short_text(f)}" for f in bad[:3]] + ([f"• …and {len(bad) - 3} more"] if len(bad) > 3 else [])
+    return "\n".join([head] + lines + [f"\nThe other {passed} checks passed ✅"]) + MORE
+
+
 def _next(conn, iid):
     i = q.invoice(conn, iid)
     codes = json.loads(i["reason_codes"] or "[]")
+    if i["decided_by"] == "reviewer":
+        return "Nothing - a reviewer has already decided this one." + MORE
     if i["status"] == "APPROVED":
-        t = ["Nothing to do - it's **Ready to Pay**" + (" (approved by a reviewer)." if i["decided_by"] == "reviewer" else ".")]
-    elif i["status"] == "REJECTED" and i["decided_by"] == "reviewer":
-        t = ["A reviewer rejected this invoice. See the reason in the **Audit Trail**."]
-    else:
-        t = ["**Recommended steps:**"] + [f"{n + 1}. {NEXT_STEP[c]}" for n, c in enumerate([c for c in codes if c in NEXT_STEP])]
-        if i["status"] == "FLAGGED":
-            t.append("\nWhen you're done, **Approve** or **Reject** it on the Review page, with a reason.")
-    if i["status"] == "FLAGGED" or (i["status"] == "APPROVED" and i["decided_by"] == "system"):
-        t.append("\nWhen you pick a decision and a reason on the Review page, a ready-to-copy email to the vendor appears there. Nothing is sent automatically.")
-    return "\n".join(t)
+        return "Nothing - it can be paid 👍" + MORE
+    first = next((c for c in codes if c in NEXT_STEP), None)
+    step = NEXT_STEP[first].replace("**", "") if first else "Look at the problems on this page."
+    if i["status"] == "REJECTED":
+        return f"Don't pay it. {step}" + MORE
+    return (f"1. {step}\n2. Then choose **Ready to Pay** or **Blocked** on the Review page.\n"
+            "3. Copy the email we prepare for the vendor.") + MORE
 
 
 def _compare(conn, iid):
     i = q.invoice(conn, iid)
     po = q.po_detail(conn, i["po_number"])
-    ls = q.lines(conn, iid)
-    t = [f"Compared with **{po['po_number']}** ({po['po_type'].lower()}):", "",
-         "| Item | Ordered | Received | Invoiced | PO rate | Invoice rate |", "|---|---:|---:|---:|---:|---:|"]
-    for l in ls:
+    t = [f"Compared with order **{po['po_number']}**:"]
+    for l in q.lines(conn, iid):
         pl = next((x for x in po["lines"] if x["line_no"] == l["po_line_no"]), None)
         if not pl:
-            t.append(f"| {l['description']} *(not on PO)* | — | — | {l['quantity']:g} | — | {inr(l['unit_price'])} |")
+            t.append(f"• {l['description']}: ⚠️ not on the order")
             continue
-        rec = pl["received"] if po["po_type"] == "GOODS" else None
-        qflag = " ⚠️" if rec is not None and l["quantity"] > rec else ""
-        pflag = " ⚠️" if abs(l["unit_price"] - pl["unit_price"]) > 0.005 else ""
-        t.append(f"| {pl['description']} | {pl['quantity']:g} | {'n/a (service)' if rec is None else f'{rec:g}'} | **{l['quantity']:g}**{qflag} | {inr(pl['unit_price'])} | **{inr(l['unit_price'])}**{pflag} |")
-    t += ["", f"PO value {inr(po['total_amount'])} · paid/approved {inr(po['committed'])} · on hold {inr(po['reserved'])} · **left {inr(po['remaining'])}**"]
-    return "\n".join(t)
+        flags = []
+        if abs(l["unit_price"] - pl["unit_price"]) > 0.005:
+            flags.append(f"price {inr(l['unit_price'], decimals=0)} vs {inr(pl['unit_price'], decimals=0)} ⚠️")
+        if po["po_type"] == "GOODS":
+            ok = l["quantity"] <= pl["received"]
+            flags.append(f"ordered {pl['quantity']:g}, received {pl['received']:g}, billed {l['quantity']:g} {'✅' if ok else '⚠️'}")
+        else:
+            flags.append(f"ordered {pl['quantity']:g}, billed {l['quantity']:g} ✅")
+        t.append(f"• {pl['description']}: " + "; ".join(flags))
+    t.append(f"\nLeft on the order: **{inr(po['remaining'], decimals=0)}**")
+    return "\n".join(t) + MORE
 
 
 def _source(conn, iid):
     i = q.invoice(conn, iid)
     ev = q.evidence(conn, iid)
-    how = {"TEXT": "✅ found in the PDF text", "OCR": "✅ found in the OCR text", "NONE": "⚠️ **not verified**"}
-    t = [("Scanned invoice: values were checked against OCR text (an independent read of the image)." if i["is_scanned"]
-          else "Values were checked against the PDF's text layer."), "",
-         "| Field | Value | Quote from the document | Check |", "|---|---|---|---|"]
-    for e in ev:
-        val = mask_account(e["value"]) if e["field"] == "bank_account" else e["value"]
-        snip = (e["snippet"] or "—").replace("|", "/")
-        if e["field"] == "bank_account" and e["snippet"]:
-            snip = snip.replace(e["value"], mask_account(e["value"]))
-        t.append(f"| {e['field'].replace('_', ' ')} | {val} | {snip[:70]} | {how[e['verification']]} |")
-    return "\n".join(t)
+    bad = [e["field"].replace("_", " ") for e in ev if e["verification"] == "NONE"]
+    how = "the scan" if i["is_scanned"] else "the PDF"
+    if not bad:
+        return f"Yes ✅ I found all {len(ev)} values in {how} again, so they were read correctly." + MORE
+    return (f"Mostly. I found {len(ev) - len(bad)} of {len(ev)} values in {how}.\n"
+            f"⚠️ Please check these yourself: {', '.join(bad)}.") + MORE
 
 
 ANSWERS = {"whats_on": _whats_on, "decided": _decided, "next": _next, "compare": _compare, "source": _source}
