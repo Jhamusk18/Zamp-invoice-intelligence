@@ -5,7 +5,7 @@ from datetime import datetime
 import pymupdf
 import streamlit as st
 
-from app import ui
+from app import helper_panel, ui
 from core import db, decision, explain, helper, queries as q
 from core.helper import plain_title, short_text
 from core.decision import LABEL
@@ -77,8 +77,8 @@ def check_html(f, with_cmp=True):
 
 
 
-# ================================================================ header: back · title · facts | ‹ n of N ›
-h = st.columns([0.42, 6.95, 0.38, 0.62, 0.38], vertical_alignment="center", gap="small")
+# ================================================================ header: back · title · facts | Ask · ‹ n of N ›
+h = st.columns([0.42, 5.2, 1.75, 0.38, 0.62, 0.38], vertical_alignment="center", gap="small")
 if h[0].button("", icon=":material/arrow_back:", key="back", help="Back to History"):
     st.switch_page(st.session_state.pages["history"])
 _d = inv["invoice_date"] or ""
@@ -87,10 +87,12 @@ h[1].markdown(f"<div class='rv-title'>Review Invoice</div><div class='z-sub' sty
               f"{html.escape(inv['vendor_name'] or 'Unknown vendor')} · {inr(inv['total'], decimals=0) if inv['total'] is not None else '—'} · "
               f"{nice_date} · {src}<span class='z-muted'>"
               f"{' · policy v' + str(inv['policy_version']) if inv['policy_version'] else ''}</span></div>", unsafe_allow_html=True)
-if h[2].button("‹", disabled=pos == 0, help="Previous invoice", use_container_width=True):
+with h[2].popover("Ask about this invoice", icon=":material/chat:", use_container_width=True):
+    helper_panel.render(conn, iid, "rv", height=300)
+if h[3].button("‹", disabled=pos == 0, help="Previous invoice", use_container_width=True):
     st.switch_page(st.session_state.pages["review"], query_params={"id": str(order[pos - 1])})
-h[3].markdown(f"<div style='text-align:center;white-space:nowrap' class='z-muted'>{pos + 1} of {len(order)}</div>", unsafe_allow_html=True)
-if h[4].button("›", disabled=pos >= len(order) - 1, help="Next invoice", use_container_width=True):
+h[4].markdown(f"<div style='text-align:center;white-space:nowrap' class='z-muted'>{pos + 1} of {len(order)}</div>", unsafe_allow_html=True)
+if h[5].button("›", disabled=pos >= len(order) - 1, help="Next invoice", use_container_width=True):
     st.switch_page(st.session_state.pages["review"], query_params={"id": str(order[pos + 1])})
 st.write("")
 
