@@ -8,7 +8,7 @@
 | 2 | **Code (public GitHub repo)** | https://github.com/Jhamusk18/Zamp-invoice-intelligence | ✅ public |
 | 3 | **5-minute demo video**: happy path live + at least one edge case, explaining the choices | Loom / YouTube (unlisted) / Google Drive (set to "anyone with the link") | ⬜ record (script in section 6) |
 | 4 | **2–4 edge cases** with why they matter | Section 4 below, also shown in the video | ✅ |
-| 5 | **Test files** the reviewer can upload | `sample_data/test_invoices/` in the repo (D1–D5, X1–X8) | ✅ |
+| 5 | **Test files** the reviewer can upload | `sample_data/test_invoices/` in the repo (D1–D5, X1–X10) | ✅ |
 
 **Before you hit submit:**
 - [ ] Open the live link in a private/incognito window. It should load without login and with no yellow "add GEMINI_API_KEY" warning.
@@ -34,7 +34,7 @@
 > - disguised duplicate
 > - split purchase order billed past its value
 >
-> These are among the 13 test PDFs in the repo.
+> These are among the 15 test PDFs in the repo.
 
 ## 3. Process map
 
@@ -75,6 +75,8 @@ Also covered:
 | X6 | Look-alike vendor name with a different GSTIN and bank | Blocked |
 | X7 | Price +7.3% over the PO | Blocked |
 | X8 | A quotation, not an invoice | Blocked |
+| X9 | Bundled line: one "desk + chair" set billed for two PO items (the problem statement's bundled line items) | Needs Attention, with a clear "check it against the order items" reason instead of blaming the vendor |
+| X10 | No PO number and two open orders fit almost equally | Needs Attention: it never silently picks one, and nothing is reserved until a person chooses |
 
 ## 5. Key choices (for questions)
 

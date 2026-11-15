@@ -50,11 +50,13 @@ The 8 past invoices that pre-fill History are in `sample_data/history_invoices/`
 | D5 | Total matches the PO, line prices don't | Needs Attention |
 | X1-X3 | Disguised duplicate · split PO over-billed · vendor arithmetic error | Blocked · Needs Attention · Needs Attention |
 | X4-X8 | Blocked vendor · unknown vendor · lookalike vendor · price +7.3% over PO · quotation, not an invoice | Blocked (all five) |
+| X9 | One bundled line ("desk + chair" set) for two PO items | Needs Attention |
+| X10 | No PO number and two open orders fit almost equally - neither is picked | Needs Attention |
 
 ## Next steps (known limits, not built)
 
 - Money as integer paise instead of rounded floats (comparisons already use small tolerances)
-- Unit price in the missing-PO score, and an explicit "two close candidates" warning
+- Unit price in the missing-PO score
 - Test that processing two related invoices in either order gives consistent results
 - Hidden-text detector tested on a large set of real-world PDFs
 - Login / shared password for a public link; recording phone verification of bank changes in the app

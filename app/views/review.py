@@ -56,6 +56,9 @@ def plain(f):
         if f["reason_code"] == "PO_INFERRED":
             best = (f["details"].get("candidates") or [{}])[0].get("po_number", "a suggested PO")
             return f"No PO number printed on the invoice; best match is {best}."
+        if f["reason_code"] == "PO_AMBIGUOUS":
+            c = f["details"].get("candidates") or [{}, {}]
+            return f"No PO number printed on the invoice; {c[0].get('po_number')} and {c[1].get('po_number')} fit almost equally."
         if f["reason_code"] == "NO_PO":
             return "No PO number printed on the invoice, and no open PO of this vendor fits."
         return f"PO number on the invoice: {a_}; matched to: {e}."

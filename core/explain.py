@@ -14,7 +14,7 @@ from core.money import inr
 
 VENDOR_FACING = {"BANK_CHANGED", "QTY_EXCEEDS_RECEIPT", "PRICE_VARIANCE", "PRICE_OVER_LIMIT", "LINE_MISMATCH",
                  "LINE_NOT_ON_PO", "VENDOR_MATH_ERROR", "MISSING_FIELDS", "DUPLICATE_EXACT", "DUPLICATE_SUSPECTED",
-                 "PO_INFERRED", "NO_PO", "PROFORMA", "PO_OVERBILLED", "TAX_ID_MISMATCH", "DATE_INVALID",
+                 "PO_INFERRED", "PO_AMBIGUOUS", "LINE_BUNDLED", "NO_PO", "PROFORMA", "PO_OVERBILLED", "TAX_ID_MISMATCH", "DATE_INVALID",
                  "CURRENCY_MISMATCH", "NOT_AN_INVOICE", "QTY_OVER_PO", "NO_RECEIPT"}
 
 ASK = {
@@ -29,6 +29,8 @@ ASK = {
     "DUPLICATE_EXACT": "We have already received this invoice. If this is a reminder, no action is needed; if it is a new bill, please issue it with a new invoice number.",
     "DUPLICATE_SUSPECTED": "This invoice looks very similar to one we already received. Please confirm whether it is a separate bill.",
     "PO_INFERRED": "The invoice doesn't mention our purchase order number. Please confirm the PO number for this invoice.",
+    "PO_AMBIGUOUS": "The invoice doesn't mention our purchase order number, and it could belong to more than one of our open orders. Please confirm the PO number for this invoice.",
+    "LINE_BUNDLED": "The invoice bills several items from our purchase order as one combined line. Please send an itemised invoice, or confirm which PO items the bundle covers.",
     "NO_PO": "We couldn't find a purchase order for this invoice. Please share the PO number it relates to.",
     "PROFORMA": "This is a proforma invoice. Please send the final tax invoice so we can process payment.",
     "NOT_AN_INVOICE": "The document we received is not an invoice. Please send the tax invoice.",
@@ -111,7 +113,7 @@ def reviewer_email(conn, invoice_id, action: str, reason: str):
     codes = json.loads(inv["reason_codes"] or "[]")
     if action == "hold":
         codes_v = [c for c in codes if c in VENDOR_FACING and c in ASK]
-        subject = f"Invoice {inv['invoice_number']} - " + ("PO confirmation required" if "PO_INFERRED" in codes or "NO_PO" in codes else "please help us resolve")
+        subject = f"Invoice {inv['invoice_number']} - " + ("PO confirmation required" if {"PO_INFERRED", "PO_AMBIGUOUS", "NO_PO"} & set(codes) else "please help us resolve")
         lines = [f"Dear {name} team,", f"We're processing your {ref}{po}."]
         if codes_v:
             lines.append("\n".join(f"- {a}" for a in dict.fromkeys(ASK[c] for c in codes_v)))

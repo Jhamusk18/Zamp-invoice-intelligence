@@ -24,7 +24,7 @@ PRIORITY = ["NOT_AN_INVOICE", "DUPLICATE_EXACT", "VENDOR_BLOCKED", "VENDOR_INACT
             "PRICE_OVER_LIMIT", "BANK_CHANGED", "HIDDEN_TEXT", "VENDOR_LOOKALIKE", "TAX_ID_MISMATCH",
             "VENDOR_NAME_MISMATCH", "DUPLICATE_SUSPECTED", "READS_DISAGREE", "UNVERIFIED_FIELD", "MISSING_FIELDS",
             "VENDOR_MATH_ERROR", "PO_OVERBILLED", "QTY_EXCEEDS_RECEIPT", "NO_RECEIPT", "PRICE_VARIANCE",
-            "LINE_MISMATCH", "LINE_NOT_ON_PO", "QTY_OVER_PO", "PO_INFERRED", "NO_PO", "PO_OTHER_VENDOR",
+            "LINE_MISMATCH", "LINE_BUNDLED", "LINE_NOT_ON_PO", "QTY_OVER_PO", "PO_AMBIGUOUS", "PO_INFERRED", "NO_PO", "PO_OTHER_VENDOR",
             "PO_CLOSED", "PO_EXPIRED", "CURRENCY_MISMATCH", "DATE_INVALID", "PROFORMA", "TAX_RATE_UNUSUAL",
             "TAX_ID_INVALID", "OVER_AUTO_LIMIT"]
 
@@ -40,7 +40,8 @@ REASON_LABEL = {
     "VENDOR_MATH_ERROR": "Invoice arithmetic doesn't add up", "PO_OVERBILLED": "Would exceed the PO balance",
     "QTY_EXCEEDS_RECEIPT": "Billed more than received", "NO_RECEIPT": "Goods not received yet",
     "PRICE_VARIANCE": "Price above the PO", "LINE_MISMATCH": "Line items don't match the PO",
-    "LINE_NOT_ON_PO": "Item not on the PO", "QTY_OVER_PO": "Quantity above the PO",
+    "LINE_NOT_ON_PO": "Item not on the PO", "LINE_BUNDLED": "Bundled line - check against the order items",
+    "PO_AMBIGUOUS": "No PO number - two orders fit, a person must choose", "QTY_OVER_PO": "Quantity above the PO",
     "PO_INFERRED": "No PO number - suggested match needs confirming", "NO_PO": "No matching purchase order",
     "PO_OTHER_VENDOR": "PO belongs to another vendor", "PO_CLOSED": "PO is closed", "PO_EXPIRED": "PO has expired",
     "CURRENCY_MISMATCH": "Currency differs from the PO", "DATE_INVALID": "Date problem", "PROFORMA": "Proforma, not a tax invoice",
@@ -51,6 +52,8 @@ GSTIN_RE = re.compile(r"^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$")
 GST_RATES = {0, 5, 12, 18, 28}
 LINE_MATCH_MIN = 0.60
 PO_INFER_MIN = 0.60
+PO_CLOSE_MARGIN = 0.05   # if the 2nd-best PO scores within this of the best, don't pick one - a person chooses
+BUNDLE_WORDS = re.compile(r"\b(bundle|bundled|kit|combo|set|package|pack of|lot)\b|\+", re.I)
 
 
 @dataclass
@@ -155,6 +158,26 @@ def parse_date(s):
 
 def desc_score(a, b):
     return fuzz.token_set_ratio(norm_name(a), norm_name(b)) / 100
+
+
+def bundle_parts(line, plines, single, tolp):
+    """An invoice line that bills several PO items as one ("Workstation set (desk + chair)").
+    Returns the PO lines it covers, or None. Found when the line's unit price equals the SUM of 2+ PO unit prices
+    (and no single PO line explains it), or when it is worded as a bundle and matches no single PO line."""
+    from itertools import combinations
+    if line.unit_price is None or len(plines) < 2:
+        return None
+    if single and single["unit_price"] and abs(line.unit_price - single["unit_price"]) / single["unit_price"] * 100 <= tolp + 1e-9:
+        return None  # an ordinary line that matches one PO item
+    for k in range(2, min(len(plines), 4) + 1):
+        for combo in combinations(plines, k):
+            tot = sum(p["unit_price"] for p in combo)
+            if tot and abs(line.unit_price - tot) / tot * 100 <= tolp + 1e-9 and \
+                    (line.quantity is None or all(line.quantity <= p["quantity"] + 1e-9 for p in combo)):
+                return list(combo)
+    if not single and BUNDLE_WORDS.search(line.description or ""):
+        return [p for p in plines if desc_score(line.description, p["description"]) >= 0.4] or None
+    return None
 
 
 def close(a, b, tol):
@@ -385,7 +408,14 @@ def evaluate(inv: InvoiceExtraction, snap: Snapshot, policy: dict, *, verificati
                 cands.append({"po_number": p["po_number"], "score": round(score, 2), "description": round(d, 2), "amount": round(a, 2), "dates": t})
             cands.sort(key=lambda c: -c["score"])
             why = f"No PO number on the invoice{'' if not ref else f' (\"{inv.po_reference}\" not found)'}"
-            if cands and cands[0]["score"] >= PO_INFER_MIN:
+            close2 = len(cands) > 1 and cands[1]["score"] >= PO_INFER_MIN and cands[0]["score"] - cands[1]["score"] < PO_CLOSE_MARGIN
+            if cands and cands[0]["score"] >= PO_INFER_MIN and close2:
+                a, b = cands[0], cands[1]
+                add("PO_MATCH", "Purchase order", "PO matching", "WARN",
+                    f"{why}. Two open orders fit almost equally: {a['po_number']} (score {a['score']:.2f}) and {b['po_number']} (score {b['score']:.2f}). "
+                    "Neither was picked - a person must choose the right PO.",
+                    "PO_AMBIGUOUS", "PO number on invoice", inv.po_reference or "none", details={"candidates": cands[:3]})
+            elif cands and cands[0]["score"] >= PO_INFER_MIN:
                 po = snap.pos[cands[0]["po_number"]]
                 res.po_match_type = "INFERRED"
                 add("PO_MATCH", "Purchase order", "PO matching", "WARN",
@@ -403,11 +433,19 @@ def evaluate(inv: InvoiceExtraction, snap: Snapshot, policy: dict, *, verificati
             tolp, cap, rej = policy["tolerance_pct"], policy["tolerance_cap"], policy["reject_variance_pct"]
             lres, worst, worst_code = [], "PASS", None
             rank = {"PASS": 0, "WARN": 1, "FAIL": 2}
+            bundle_map = {}
             for i, l in enumerate(inv.lines):
                 best = max(plines, key=lambda pl: dscore(i, po["po_number"], pl)) if plines else None
                 s = dscore(i, po["po_number"], best) if best else 0
                 r, code, note = "PASS", None, ""
-                if not best or s < LINE_MATCH_MIN:
+                parts = bundle_parts(l, plines, best if best and s >= LINE_MATCH_MIN else None, tolp)
+                if parts:
+                    bundle_map[i] = [p_["line_no"] for p_ in parts]
+                    r, code = "WARN", "LINE_BUNDLED"
+                    note = ("one bundled line for " + " + ".join(p_["description"] for p_ in parts)
+                            + (f" ({inr(sum(p_['unit_price'] for p_ in parts))} per set on the PO)" if len(parts) > 1 else "")
+                            + " - check it against the order items")
+                elif not best or s < LINE_MATCH_MIN:
                     r, code, note = "WARN", "LINE_NOT_ON_PO", "not on the PO"
                 else:
                     res.line_map[i] = best["line_no"]
@@ -428,7 +466,8 @@ def evaluate(inv: InvoiceExtraction, snap: Snapshot, policy: dict, *, verificati
                         left = best["quantity"] - snap.billed_qty.get((po["po_number"], best["line_no"]), 0)
                         if l.quantity > left + 1e-9 and r == "PASS":
                             r, code, note = "WARN", "QTY_OVER_PO", f"qty {l.quantity:g} but only {left:g} left on the PO"
-                lres.append({"invoice_line": l.description, "po_line": best["description"] if best and s >= LINE_MATCH_MIN else None,
+                lres.append({"invoice_line": l.description, "po_line": (" + ".join(x["description"] for x in plines if x["line_no"] in bundle_map[i]) if i in bundle_map
+                                                                        else best["description"] if best and s >= LINE_MATCH_MIN else None),
                              "match": round(s, 2), "qty": l.quantity, "invoice_price": l.unit_price,
                              "po_price": best["unit_price"] if best and s >= LINE_MATCH_MIN else None, "result": r, "note": note})
                 if rank[r] > rank[worst] or (rank[r] == rank[worst] and r != "PASS" and PRIORITY.index(code) < PRIORITY.index(worst_code)):
@@ -461,8 +500,9 @@ def evaluate(inv: InvoiceExtraction, snap: Snapshot, policy: dict, *, verificati
                 add("RECEIPT", "Purchase order", "Goods received (3-way)", "NA", "Short delivery check is turned off in Approval Rules.")
             else:
                 issues, rows3 = [], []
-                for i, l in enumerate(inv.lines):
-                    ln = res.line_map.get(i)
+                pairs = [(i, l, res.line_map.get(i)) for i, l in enumerate(inv.lines)] + \
+                        [(i, inv.lines[i], ln) for i, lns in bundle_map.items() for ln in lns]
+                for i, l, ln in pairs:
                     if ln is None or l.quantity is None:
                         continue
                     pl = next(x for x in plines if x["line_no"] == ln)

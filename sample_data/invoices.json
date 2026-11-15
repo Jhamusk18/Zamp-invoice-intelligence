@@ -695,6 +695,70 @@
           "NOT_AN_INVOICE"
         ]
       }
+    },
+    {
+      "key": "X9_bundled_line",
+      "role": "demo",
+      "layout": "modern",
+      "title": "Extra: bundled line item",
+      "story": "The PO has 6 desks (₹6,500) and 6 chairs (₹5,500). The invoice bills one line: 6 × 'Workstation set (desk + chair)' at ₹12,000. Correct total, but it can't be checked line by line.",
+      "truth": {
+        "vendor_name": "Northstar Office Supplies Pvt Ltd",
+        "vendor_gstin": "29AABCN1234F1Z5",
+        "invoice_number": "INV-NS-1047",
+        "invoice_date": "2026-11-04",
+        "due_date": "2026-12-04",
+        "po_reference": "PO-7905",
+        "currency": "INR",
+        "lines": [
+          {
+            "description": "Workstation set (desk + chair)",
+            "quantity": 6,
+            "unit_price": 12000
+          }
+        ],
+        "tax_rate": 18,
+        "bank_account": "50100234567890",
+        "ifsc": "HDFC0001234"
+      },
+      "expected": {
+        "status": "FLAGGED",
+        "reasons": [
+          "LINE_BUNDLED"
+        ]
+      }
+    },
+    {
+      "key": "X10_two_close_pos",
+      "role": "demo",
+      "layout": "classic",
+      "title": "Extra: no PO number, two orders fit",
+      "story": "Bharat Steel has two open orders for the same MS angle (PO-7880 and PO-7882). The invoice has no PO number, and both fit almost equally, so the system doesn't pick one.",
+      "truth": {
+        "vendor_name": "Bharat Steel Traders",
+        "vendor_gstin": "19AAKFB3456R1Z6",
+        "invoice_number": "BST/26-27/0419",
+        "invoice_date": "2026-11-06",
+        "due_date": "2026-12-06",
+        "po_reference": null,
+        "currency": "INR",
+        "lines": [
+          {
+            "description": "MS angle 50x50x6 mm, 6 m",
+            "quantity": 40,
+            "unit_price": 820
+          }
+        ],
+        "tax_rate": 18,
+        "bank_account": "1234002100056789",
+        "ifsc": "PUNB0123400"
+      },
+      "expected": {
+        "status": "FLAGGED",
+        "reasons": [
+          "PO_AMBIGUOUS"
+        ]
+      }
     }
   ]
 }

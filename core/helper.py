@@ -139,6 +139,13 @@ def short_text(f):
     if code == "PO_INFERRED":
         best = (d.get("candidates") or [{}])[0].get("po_number", "a likely order")
         return f"No PO number on the invoice. Best guess: {best} - please confirm."
+    if code == "PO_AMBIGUOUS":
+        c = d.get("candidates") or [{}, {}]
+        return f"No PO number on the invoice, and two orders fit almost equally ({c[0].get('po_number')} and {c[1].get('po_number')}). Please choose the right one."
+    if code == "LINE_BUNDLED":
+        x = next((x for x in d.get("lines", []) if x.get("result") != "PASS"), None)
+        if x:
+            return f"The invoice has one bundled line (“{x['invoice_line']}”) for {x['po_line']}. Check it against the order items."
     if code == "NO_PO":
         return "No PO number on the invoice, and no matching order was found."
     if code in ("LINE_NOT_ON_PO", "PRICE_VARIANCE", "LINE_MISMATCH", "PRICE_OVER_LIMIT", "QTY_OVER_PO"):
@@ -194,7 +201,9 @@ NEXT_STEP = {
     "HIDDEN_TEXT": "Open the PDF and check the hidden text. Treat the invoice as suspicious; it was not used in the decision.",
     "DUPLICATE_EXACT": "Nothing to pay - this invoice was already received. Let the vendor know if they expected payment.",
     "DUPLICATE_SUSPECTED": "Compare it with the earlier invoice and confirm with the vendor whether it's a separate bill.",
-    "PO_INFERRED": "Check the suggested PO under **Details & Matches** and confirm it on the Review page, or ask the vendor for the PO number.",
+    "PO_INFERRED": "Confirm the suggested PO with the requester or the vendor before paying.",
+    "PO_AMBIGUOUS": "Two orders fit - ask the requester or the vendor which PO this invoice is for. Nothing was reserved on either PO.",
+    "LINE_BUNDLED": "Check that the bundle matches the order items (and that each part was delivered), or ask the vendor for an itemised invoice.",
     "NO_PO": "Ask the vendor or the requester which PO this belongs to.",
     "QTY_EXCEEDS_RECEIPT": "Check with the warehouse whether the rest was delivered; otherwise ask the vendor for a corrected invoice.",
     "PRICE_VARIANCE": "Ask the buyer whether the higher price was agreed; if not, request a corrected invoice.",
