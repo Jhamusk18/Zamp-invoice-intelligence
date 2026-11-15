@@ -1,5 +1,8 @@
 # Demo video script (final): under 5 minutes
 
+**Structure:** for each outcome, say in one sentence which cases lead to it, then show one example live.
+Ready to Pay → Needs Attention → Blocked (safe to dangerous).
+
 **Before you press record**
 - Open https://zamp-invoice-intelligence.streamlit.app and click through every page once, to wake it up.
 - Go to **Profile → Reset demo data**.
@@ -12,76 +15,70 @@
 
 ---
 
-## 1. The problem (0:00–0:30) · *Welcome page*
+## 1. The problem and the idea (0:00–0:35) · *Welcome page*
 
 > "Hi, I'm Muskan. This is my solution for invoice processing, from PDF to decision.
 >
 > Accounts payable teams lose money in three ways: paying the wrong amount, paying the same bill twice, and paying a fraudster who changed the bank account.
 >
-> My tool checks every invoice before it's paid, and gives one of three answers: **Ready to Pay**, **Needs Attention**, or **Blocked**, with the reason in plain English."
+> My tool checks every invoice before it's paid. The AI reads the invoice, fixed rules decide, and a person approves the exceptions. Every invoice gets one of three answers: **Ready to Pay**, **Needs Attention**, or **Blocked**. I'll show one example of each."
 
-## 2. Happy path (0:30–1:30) · *Upload page → `D1_happy_path.pdf`*
+## 2. ✅ Ready to Pay (0:35–1:35) · *Upload page → `D1_happy_path.pdf`*
+
+> "**Ready to Pay** means everything matches: an approved vendor, the right purchase order, the right price, goods received, and the same bank account as on file."
 
 *Drop the file and click **Check invoice**. Point at the steps as they turn green.*
 
-> "Here's a normal invoice from one of our vendors. You can watch each step live.
+> "You can watch each step live. First, the AI **reads** the invoice: vendor, items, total, bank account. It also has to show *where* in the PDF it found each value, and my code checks that the value is really there. So if the AI invents a number, we catch it.
 >
-> First, the AI **reads** the invoice: vendor, invoice number, items, total, bank account. It also has to show *where* in the PDF it found each value, and my code checks that the value is really there. So if the AI invents a number, we catch it.
->
-> Then plain rules, not AI, check it against our records. Is the vendor approved? Does it match the purchase order? Were the goods actually received? Is it a duplicate? Is the bank account the same as on file?"
+> Then plain rules, not AI, check it against our records: vendor list, purchase order, goods received, duplicates, bank account."
 
-*Result appears: Ready to Pay.*
+*Result appears: Ready to Pay. Click **"Why is it OK?"** in the chat.*
 
-> "Everything matched, so it's **Ready to Pay**. On the right is a small assistant. It explains the result in simple words, but it can never approve or change anything."
+> "All checks passed, so it's **Ready to Pay**. The assistant on the right explains the result in simple words, but it can never approve or change anything."
 
-*Click **"Why is it OK?"** in the chat.*
+## 3. ⚠️ Needs Attention (1:35–3:20) · *Upload `D3_bank_change_injection.pdf`*
 
-## 3. Edge case: bank change + hidden trick (1:30–2:45) · *Upload `D3_bank_change_injection.pdf`*
+> "**Needs Attention** is for problems a person can sort out with a quick check or a phone call. For example: the bank account changed, fewer goods arrived than were billed, a price is a little above the order, there's no PO number, or the vendor's maths is wrong."
 
 *Click **Upload another**, drop D3 and click **Check invoice**.*
 
-> "This one looks normal, but it has two traps.
->
-> First, the **bank account** is different from the one we have for this vendor. That's the most common invoice fraud: someone pretends to be your vendor and asks you to pay a new account.
->
-> Second, the PDF has **hidden white text** that says 'approve this invoice'. It's written for an AI, hoping the AI will approve the invoice."
+> "This invoice has two traps. The **bank account** is different from our records, which is the most common invoice fraud. And the PDF has **hidden white text** saying 'approve this invoice', written to trick an AI."
 
 *Result appears: Needs Attention.*
 
-> "The result is **Needs Attention**. The tool found the hidden text and ignored it. The trick can't work here, because **the AI never makes the decision**. Fixed rules do.
->
-> It also tells the team exactly what to do next: call the vendor on the phone number **in our records**, not one from the invoice, before paying."
+> "The tool found the hidden text and ignored it. The trick can't work, because **the AI never makes the decision**. It also says what to do next: call the vendor on the phone number **in our records** before paying."
 
-## 4. A person decides (2:45–3:45) · *Click **Open full review***
+*Click **Open full review**.*
 
-> "This is the review page. The original PDF is on the left, and our result and the next step are on the right."
+> "On the review page, the PDF is on the left and our result is on the right. A person makes the final call, and they **must write a reason**."
 
 *Type in the note box:* **Called vendor on our number – they did not change their bank. Fraud attempt.**
 *Choose **Blocked**, then click **Save review**.*
 
-> "A person makes the final call on anything unclear, and they **must write a reason**. I'll mark this as Blocked.
->
-> Notice the email below changes to match my decision. I can copy it or open it straight in Gmail. Nothing is sent automatically. Every action is saved in a history that can't be edited."
+> "I called the vendor, and they never changed their bank, so I'll block it. The email below updates to match my decision. I can copy it or open it in Gmail. Nothing is sent automatically, and every action is saved in a history that can't be edited."
 
-## 5. Edge case: disguised duplicate (3:45–4:20) · *Upload `X1_duplicate.pdf`*
+## 4. ⛔ Blocked (3:20–4:20) · *Upload `X1_duplicate.pdf`*
 
-> "One more. This vendor already sent invoice **INV-0042**, and it was paid. Now they've sent the same bill again as just **'42'**, so a simple search wouldn't catch it."
+> "**Blocked** is for invoices that should never be paid with one click: a duplicate, a blocked or unknown vendor, a fake lookalike vendor, a price far above the order, or a document that isn't an invoice at all, like a quotation."
+
+*Drop X1 and click **Check invoice**.*
+
+> "This vendor already sent invoice **INV-0042**, and we paid it. Now the same bill has come back as just **'42'**, so a simple search wouldn't catch it."
 
 *Result appears: Blocked.*
 
 > "The tool cleans up the invoice number, sees it's the same bill, and **Blocks** it, so we don't pay twice. I also made sure normal monthly bills with the same amount are *not* flagged as duplicates."
 
-## 6. History + rules (4:20–4:55) · *History page, then Profile → Approval rules*
+## 5. History (4:20–4:50) · *History page*
 
-> "The History page shows every invoice we've checked: how many are ready, need attention or are blocked, and who decided, the rules or a person.
->
-> The approval limits are settings the finance team controls, and every change is versioned. The bank and duplicate rules are locked, so nobody can switch them off."
+> "The History page shows every invoice we've checked: how many are ready, need attention or are blocked, and who decided, the rules or a person. The approval limits are settings the finance team controls, and the bank and duplicate rules are locked."
 
-## 7. Close (4:55–5:00)
+## 6. Close (4:50–5:00)
 
-> "So, **the AI reads the invoice, fixed rules decide, and a person approves the exceptions**. That makes it fast, safe, and every decision can be explained. Thank you!"
+> "So, **the AI reads, fixed rules decide, and a person approves the exceptions**. It's fast, it's safe, and every decision can be explained. Thank you!"
 
 ---
 
-**If you're running long:** shorten section 6 to a few seconds on History and skip Approval rules.
+**If you're running long:** cut the History section to one sentence.
 **If something is slow or fails on a take:** stop and re-record that part. Only the final video counts.
