@@ -55,11 +55,22 @@ div[data-testid="stVerticalBlockBorderWrapper"] { border-radius: 14px; }
 .z-tag { display:inline-block; font-size:.68rem; padding:0 6px; border-radius:6px; background: var(--sky); color: var(--blue); font-weight:600; margin-top:2px; }
 .z-sublabel { display:block; font-size:.74rem; color: var(--muted); margin-top:3px; }
 
-.z-kpi { border-radius: 14px; padding: 16px 18px; background: #fff; border: 1px solid var(--line); border-top: 4px solid var(--line); }
-.z-kpi .t { font-size: .85rem; color: var(--muted); font-weight: 600; }
-.z-kpi .v { font-size: 1.55rem; font-weight: 750; margin-top: 4px; color: var(--txt); }
-.z-kpi .n { font-size: .84rem; color: var(--muted); }
-.z-kpi.green { border-top-color: #22C55E; } .z-kpi.amber { border-top-color: #F59E0B; } .z-kpi.red { border-top-color: #EF4444; } .z-kpi.blue { border-top-color: var(--blue2); }
+.z-kpi { border-radius: 16px; padding: 18px 20px; display:flex; gap: 16px; align-items:center; border: 1px solid transparent;
+         box-shadow: 0 6px 18px rgba(15,27,51,.06); position: relative; overflow: hidden; }
+.z-kpi::after { content:""; position:absolute; right:-30px; bottom:-40px; width: 180px; height: 110px; border-radius: 50%; opacity: .35; }
+.z-kpi .ico { width: 52px; height: 52px; border-radius: 14px; flex: none; display:flex; align-items:center; justify-content:center; }
+.z-kpi .ico svg { width: 28px; height: 28px; }
+.z-kpi .t { font-size: .95rem; font-weight: 700; }
+.z-kpi .v { font-size: 1.75rem; font-weight: 800; line-height: 1.15; color: var(--txt); margin: 2px 0; font-variant-numeric: tabular-nums; }
+.z-kpi .n { font-size: .86rem; color: #475569; }
+.z-kpi.green { background: linear-gradient(135deg, #F1FBF5 0%, #E2F6EA 100%); border-color: #CBEBD7; } .z-kpi.green::after { background: #BFE8CF; }
+.z-kpi.green .ico { background: #D7F2E1; color: #16A34A; } .z-kpi.green .t { color: #15803D; }
+.z-kpi.amber { background: linear-gradient(135deg, #FFF9EF 0%, #FEEFD9 100%); border-color: #F6DDB0; } .z-kpi.amber::after { background: #FBDDAA; }
+.z-kpi.amber .ico { background: #FDE7C3; color: #D97706; } .z-kpi.amber .t { color: #B45309; }
+.z-kpi.red { background: linear-gradient(135deg, #FFF4F4 0%, #FDE5E5 100%); border-color: #F5CDCD; } .z-kpi.red::after { background: #F9CACA; }
+.z-kpi.red .ico { background: #FBD5D5; color: #DC2626; } .z-kpi.red .t { color: #B91C1C; }
+.z-kpi.blue { background: linear-gradient(135deg, #F3F7FF 0%, #E6EEFE 100%); border-color: #CFDCF7; } .z-kpi.blue::after { background: #C9D9FB; }
+.z-kpi.blue .ico { background: #DCE7FD; color: #2563EB; } .z-kpi.blue .t { color: #1D4ED8; }
 
 /* stepper */
 .z-track { display:flex; align-items:flex-start; justify-content:space-between; margin: 6px 0 4px; }
@@ -95,18 +106,31 @@ div[data-testid="stVerticalBlockBorderWrapper"] { border-radius: 14px; }
 .z-check .cmp { color: var(--muted); font-size: .84rem; margin-top: 3px; }
 .z-na { color: var(--muted); font-size: .82rem; padding: 4px 0; }
 
-/* history rows */
-.z-thead { display:flex; color: var(--muted); font-size:.78rem; font-weight:650; text-transform:uppercase; letter-spacing:.04em; padding: 0 6px 6px; }
-[class*="st-key-row_"] { background:#fff; border:1px solid var(--line); border-radius: 12px; padding: 6px 10px; transition: all .12s; }
-[class*="st-key-row_"]:hover { border-color: var(--blue2); box-shadow: 0 4px 14px rgba(37,99,235,.10); }
-.z-row { display:flex; align-items:center; gap: 10px; min-height: 2.6rem; }
-.z-cell { font-size: .9rem; color: var(--txt); line-height: 1.3; padding-right: 6px; }
+/* history: one table card */
+.st-key-card_table { background:#fff; border:1px solid var(--line); border-radius: 18px; padding: 16px 18px 12px; box-shadow: 0 8px 24px rgba(15,27,51,.06); }
+.z-tabletitle { font-size: 1.12rem; font-weight: 800; color: var(--txt); display:flex; align-items:center; gap: 10px; }
+.z-count { font-size: .76rem; font-weight: 700; background: #E6EEFE; color: #1D4ED8; border-radius: 999px; padding: 3px 11px; }
+.z-thead { display:flex; color: #475569; font-size:.74rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em;
+           padding: 11px 14px; background: #EEF3FC; border-radius: 12px; margin: 10px 0 2px; }
+[class*="st-key-row_"] { border-bottom: 1px solid #EEF2F8; padding: 2px 14px !important; transition: background .12s; }
+[class*="st-key-row_"]:hover { background: #F6F9FF; }
 [class*="st-key-row_"] [data-testid="stMarkdownContainer"] p { margin: 0; }
 [class*="st-key-row_"] [data-testid="stMarkdown"], [class*="st-key-row_"] [data-testid="stElementContainer"] { margin-bottom: 0 !important; }
-[class*="st-key-row_"] { padding: 10px 12px !important; }
-[class*="st-key-row_"] [data-testid="stColumn"] { align-self: center; }
-[data-testid="stLogo"] { height: 2.2rem; max-width: 15rem; }
-.z-reason { font-size: .86rem; color: #33445F; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+[class*="st-key-row_"] .stButton > button { background: #EAF1FF; color: #1D4ED8; border: 1px solid #D3E0FB; border-radius: 999px; padding: 3px 14px; white-space: nowrap;
+  min-height: 0; font-weight: 700; box-shadow: 0 2px 6px rgba(37,99,235,.08); }
+[class*="st-key-row_"] .stButton > button:hover { background: #2563EB; color: #fff; border-color: #2563EB; }
+[class*="st-key-row_"] .stButton > button p, [class*="st-key-row_"] .stButton > button span { color: inherit !important; font-weight: 700; }
+.z-cell { font-size: .9rem; color: var(--txt); line-height: 1.3; padding-right: 8px; }
+.z-reason { font-size: .86rem; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.z-file { display:flex; align-items:center; gap: 11px; min-width: 0; }
+.z-file .doc { width: 32px; height: 36px; flex: none; border-radius: 8px; background: #FDECEC; display:flex; align-items:center; justify-content:center; }
+.z-file .doc svg { width: 20px; height: 22px; }
+.z-file .nm { font-weight: 700; color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.z-file .sub { font-size: .76rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.z-vend { display:flex; align-items:center; gap: 10px; min-width: 0; }
+.z-av { width: 32px; height: 32px; border-radius: 50%; flex: none; display:flex; align-items:center; justify-content:center; font-size: .74rem; font-weight: 800; }
+.z-vend .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.z-amt { display:block; text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; padding-right: 14px; }
 
 /* ask panel */
 [class*="st-key-ask_"] { background:#fff; border: 1.5px solid #BFD3FF; border-radius: 16px; padding: 16px 16px 10px; }
@@ -193,16 +217,43 @@ def pill(inv, with_sub=False):
     return out
 
 
-def kpi(kind, title, amount, count):
-    st.markdown(f"<div class='z-kpi {kind}'><div class='t'>{html.escape(title)}</div>"
-                f"<div class='v'>{inr(amount, decimals=0)}</div><div class='n'>{count} invoice{'s' if count != 1 else ''}</div></div>",
-                unsafe_allow_html=True)
+SVG = {
+    "green": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12.5l4.5 4.5L19 7.5'/></svg>",
+    "amber": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3.5L2.5 20h19L12 3.5z'/><path d='M12 10v4.5M12 17.3v.2'/></svg>",
+    "red": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 2.8l7.5 3v6.2c0 4.6-3.2 8-7.5 9.2-4.3-1.2-7.5-4.6-7.5-9.2V5.8l7.5-3z'/><path d='M9.5 9.5l5 5M14.5 9.5l-5 5'/></svg>",
+    "blue": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round'><path d='M5 7h14M5 12h14M5 17h9'/></svg>",
+}
+PDF_SVG = ("<svg viewBox='0 0 20 22'><path d='M4 1h8l5 5v13a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2z' fill='#fff' stroke='#DC2626' stroke-width='1.6'/>"
+           "<path d='M12 1v5h5' fill='none' stroke='#DC2626' stroke-width='1.6'/><text x='9.5' y='17.5' font-family='Arial' font-size='5.6' font-weight='800' "
+           "fill='#DC2626' text-anchor='middle'>PDF</text></svg>")
+
+
+def kpi(kind, title, amount, count, share=None):
+    sub = f"{count} invoice{'s' if count != 1 else ''}" + (f" · {share:.0%} of value" if share is not None else "")
+    st.markdown(f"<div class='z-kpi {kind}'><div class='ico'>{SVG[kind]}</div><div style='position:relative;z-index:1'><div class='t'>{html.escape(title)}</div>"
+                f"<div class='v'>{inr(amount, decimals=0)}</div><div class='n'>{sub}</div></div></div>", unsafe_allow_html=True)
+
+
+AV = [("#E0EAFF", "#1D4ED8"), ("#E0F2FE", "#0369A1"), ("#DCFCE7", "#15803D"), ("#FCE7F3", "#BE185D"),
+      ("#FFEDD5", "#C2410C"), ("#EDE9FE", "#6D28D9"), ("#CCFBF1", "#0F766E"), ("#FEF3C7", "#B45309")]
+
+
+def avatar(name):
+    words = [w for w in (name or "?").replace(".", " ").split() if w[:1].isalnum()]
+    ini = "".join(w[0] for w in words[:2]).upper() or "?"
+    bg, fg = AV[sum(map(ord, name or "?")) % len(AV)]
+    return f"<span class='z-av' style='background:{bg};color:{fg}'>{html.escape(ini)}</span>"
+
+
+def file_cell(number, sub):
+    return (f"<div class='z-file'><div class='doc'>{PDF_SVG}</div><div style='min-width:0'><div class='nm'>{html.escape(number)}</div>"
+            f"<div class='sub'>{sub}</div></div></div>")
 
 
 def stat(kind, title, value, note):
     """A small number card (used where the value isn't money)."""
-    st.markdown(f"<div class='z-kpi {kind}'><div class='t'>{html.escape(title)}</div><div class='v'>{html.escape(str(value))}</div>"
-                f"<div class='n'>{html.escape(note)}</div></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='z-kpi {kind}'><div class='ico'>{SVG[kind]}</div><div style='position:relative;z-index:1'><div class='t'>{html.escape(title)}</div>"
+                f"<div class='v'>{html.escape(str(value))}</div><div class='n'>{html.escape(note)}</div></div></div>", unsafe_allow_html=True)
 
 
 def secs(x):
