@@ -143,6 +143,18 @@ def _decided(conn, iid):
 
 
 NEXT_STEP = {
+    "NOT_AN_INVOICE": "Don't pay a quotation, order or credit note. Ask the vendor for the tax invoice once the goods or services are delivered.",
+    "VENDOR_INACTIVE": "Do not pay. The vendor is inactive in the vendor master - check with procurement whether it should be reactivated.",
+    "PROFORMA": "Don't pay a proforma. Ask the vendor for the final tax invoice.",
+    "TAX_ID_MISMATCH": "Confirm the GSTIN with the vendor using contact details on file before paying.",
+    "TAX_ID_INVALID": "Ask the vendor for an invoice with a valid GSTIN.",
+    "PO_CLOSED": "Ask procurement whether the closed PO should be reopened, or which PO this belongs to.",
+    "PO_EXPIRED": "Ask procurement to extend the PO, or which current PO this belongs to.",
+    "PO_OTHER_VENDOR": "The PO belongs to another vendor - ask the vendor for the correct PO number.",
+    "CURRENCY_MISMATCH": "Ask the vendor to reissue the invoice in the PO currency.",
+    "DATE_INVALID": "Check the invoice and due dates with the vendor.",
+    "NO_RECEIPT": "Check with the warehouse whether the goods have arrived before paying.",
+    "TAX_RATE_UNUSUAL": "Check the GST rate with the vendor or your tax team.",
     "BANK_CHANGED": "Call the vendor on the phone number **in our vendor records** (not one from the invoice) to confirm the new bank account. Until then, don't pay.",
     "HIDDEN_TEXT": "Open the PDF and check the hidden text. Treat the invoice as suspicious; it was not used in the decision.",
     "DUPLICATE_EXACT": "Nothing to pay - this invoice was already received. Let the vendor know if they expected payment.",
