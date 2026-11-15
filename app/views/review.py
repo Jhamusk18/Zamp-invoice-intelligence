@@ -113,6 +113,64 @@ def plain(f):
         return f"This document is a {a_.lower()}."
     return f"On the invoice: {a_}; our records: {e or '—'}."
 
+TITLES = {"DOC_TYPE": "Document type", "REQUIRED_FIELDS": "Required details", "EVIDENCE": "Values found in the PDF", "HIDDEN_TEXT": "Hidden text",
+          "READS_AGREE": "Second read", "ARITHMETIC": "Amounts add up", "VENDOR": "Vendor", "TAX_ID": "GSTIN", "BANK": "Bank account",
+          "DUPLICATE": "Duplicate", "PO_MATCH": "Purchase order", "PO_LINES": "Items vs order", "PO_BALANCE": "Order budget",
+          "RECEIPT": "Goods received", "DATES": "Dates", "CURRENCY": "Currency", "AUTO_LIMIT": "Approval limit"}
+
+
+def plain_title(f):
+    return TITLES.get(f["check_id"], f["details"].get("label", f["check_id"]))
+
+
+def _first(msg):
+    import re
+    t = msg.split(". ")[0].rstrip(".")
+    return re.sub(r"\s*\((score|similarity|allowed|PO value|approved|paid)[^)]*\)", "", t) + "."
+
+
+def short_text(f):
+    """One plain sentence a non-technical reviewer can act on."""
+    code, d = f["reason_code"], f["details"]
+    if code == "BANK_CHANGED":
+        return f"The invoice asks us to pay {f['actual']}, but our records have {f['expected']}. Call the vendor before paying."
+    if code == "HIDDEN_TEXT":
+        return "The PDF hides text that tries to get it approved. It was ignored, but treat this invoice as suspicious."
+    if code == "PO_INFERRED":
+        best = (d.get("candidates") or [{}])[0].get("po_number", "a likely order")
+        return f"No PO number on the invoice. Best guess: {best} - please confirm."
+    if code == "NO_PO":
+        return "No PO number on the invoice, and no matching order was found."
+    if code in ("LINE_NOT_ON_PO", "PRICE_VARIANCE", "LINE_MISMATCH", "PRICE_OVER_LIMIT", "QTY_OVER_PO"):
+        bad = [x for x in d.get("lines", []) if x.get("result") != "PASS"]
+        if bad:
+            x = bad[0]
+            note = x["note"].split(" (")[0].replace("vs PO", "vs the order").replace("not on the PO", "isn't on the order").replace("on the PO", "on the order")
+            more = f" (+{len(bad) - 1} more)" if len(bad) > 1 else ""
+            return f"{x['invoice_line']}: {note}{more}."
+    if code == "QTY_EXCEEDS_RECEIPT":
+        rows = [r for r in d.get("rows", []) if r["invoiced"] > r["received"] - r.get("billed_before", 0)]
+        if rows:
+            r = rows[0]
+            return f"Billed {r['invoiced']:g}, but only {max(r['received'] - r.get('billed_before', 0), 0):g} received and not yet billed."
+    if code == "DUPLICATE_EXACT":
+        return f"We already have this invoice ({f['actual']} is the same as an earlier one). Don't pay it twice."
+    if code == "OVER_AUTO_LIMIT":
+        return f"{f['actual']} is above the {f['expected'].replace('≤ ', '')} limit, so a person must approve it."
+    if code == "UNVERIFIED_FIELD":
+        return "Some values couldn't be found in the PDF. Compare them with the document yourself."
+    if code == "VENDOR_MATH_ERROR":
+        return "The invoice's own numbers don't add up - ask the vendor for a corrected invoice."
+    if code == "VENDOR_LOOKALIKE":
+        return "The name looks like one of our vendors, but it's a different company. Possible impersonation."
+    if code == "UNKNOWN_VENDOR":
+        return "This vendor isn't on our approved list."
+    if code == "VENDOR_BLOCKED":
+        return "This vendor is blocked in our records - don't pay."
+    if code == "NOT_AN_INVOICE":
+        return "This is not an invoice (for example a quotation), so there's nothing to pay."
+    return _first(f["message"])
+
 
 def check_html(f, with_cmp=True):
     cmp = plain(f) if with_cmp else ""
@@ -201,31 +259,28 @@ with right:
     fs = q.findings(conn, iid)
     tabs = st.tabs(["Checks", "Details & Matches", "Audit Trail"])
 
-    # ---- Checks: problems first; passed folded; not-applicable as a muted line
+    # ---- Checks, for a non-technical reader: one short sentence per problem; everything else folded away
     with tabs[0]:
-        if inv["explanation"]:
-            stitle = "Rules' summary <span class='z-muted' style='font-weight:400'>(written before the reviewer's decision)</span>" if inv["decided_by"] == "reviewer" else "Summary"
-            st.markdown(f"<div class='z-card' style='margin-bottom:12px'><b>{stitle}</b><br><span style='color:#33445F'>{html.escape(inv['explanation'])}</span></div>",
-                        unsafe_allow_html=True)
         bad = sorted([f for f in fs if f["result"] in ("WARN", "FAIL")], key=lambda f: f["result"] != "FAIL")
         if bad:
-            st.markdown(f"**Needs your attention ({len(bad)})**")
-            st.markdown("".join(check_html(f) for f in bad), unsafe_allow_html=True)
+            st.markdown(f"<div class='z-sectitle'>{len(bad)} thing{'s' if len(bad) != 1 else ''} to look at</div>", unsafe_allow_html=True)
+            st.markdown("".join(
+                f"<div class='z-prob {'FAIL' if f['result'] == 'FAIL' else 'WARN'}'><div class='ic'>{'⛔' if f['result'] == 'FAIL' else '⚠️'}</div>"
+                f"<div><div class='tt'>{html.escape(plain_title(f))}</div><div class='tx'>{html.escape(short_text(f))}</div></div></div>" for f in bad),
+                unsafe_allow_html=True)
         else:
-            st.markdown("✅ **Nothing needs attention.** Every check passed.")
+            st.markdown("<div class='z-prob OK'><div class='ic'>✅</div><div><div class='tt'>Nothing to look at</div>"
+                        "<div class='tx'>Every check passed.</div></div></div>", unsafe_allow_html=True)
         passed = [f for f in fs if f["result"] == "PASS"]
-        with st.expander(f"Passed ({len(passed)})"):
-            for g in ["Document", "Vendor & bank", "Order & goods", "Policy"]:
-                items = [f for f in passed if GROUP.get(f["check_group"]) == g]
-                if items:
-                    st.markdown(f"<div class='z-muted' style='margin-top:6px;text-transform:uppercase;letter-spacing:.06em;font-size:.75rem'>{g}</div>"
-                                + "".join(check_html(f, with_cmp=False) for f in items), unsafe_allow_html=True)
         na = [f for f in fs if f["result"] == "NA"]
-        if na:
-            st.markdown("".join(f"<div class='z-na'>➖ <b>{html.escape(f['details'].get('label', f['check_id']))}</b> - not applicable: "
-                                f"{html.escape(f['message'])}</div>" for f in na), unsafe_allow_html=True)
-        st.caption("✅ passed · ⚠️ needs attention · ⛔ blocks payment · ➖ not applicable")
+        with st.expander(f"✅ {len(passed)} checks passed" + (f" · {len(na)} not needed" if na else "")):
+            st.markdown("<div class='z-chips'>" + "".join(f"<span class='z-chip ok' title='{html.escape(f['message'])}'>✓ {html.escape(plain_title(f))}</span>" for f in passed)
+                        + "".join(f"<span class='z-chip na' title='{html.escape(f['message'])}'>– {html.escape(plain_title(f))}</span>" for f in na)
+                        + "</div><div class='z-muted' style='margin-top:8px'>Hover a label to see what was checked. Grey = not needed for this invoice.</div>",
+                        unsafe_allow_html=True)
         with st.expander("Technical details"):
+            if inv["explanation"]:
+                st.markdown(f"**{'Rules summary (written before the reviewer decided)' if inv['decided_by'] == 'reviewer' else 'Summary'}**  \n{inv['explanation']}")
             st.dataframe([{"check": f["check_id"], "result": f["result"], "code": f["reason_code"], "message": f["message"],
                            "expected": f["expected"], "found": f["actual"], "policy": f["policy_version"]} for f in fs],
                          hide_index=True, use_container_width=True)

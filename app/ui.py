@@ -181,6 +181,18 @@ div[data-testid="stChatMessage"] { background: #F7FAFF; border: 1px solid #E3EBF
   font-family: "Source Sans Pro", "Segoe UI", sans-serif !important; font-size: .95rem !important; line-height: 1.6 !important; color: var(--txt) !important; white-space: pre-wrap !important; }
 [class*="st-key-mail_"] [data-testid="stHorizontalBlock"] { padding: 10px 16px 14px; border-top: 1px solid #EDF1F8; background: #F8FAFE; }
 
+/* checks, plain version */
+.z-sectitle { font-weight: 800; font-size: 1.05rem; color: var(--txt); margin: 4px 0 10px; }
+.z-prob { display:flex; gap: 12px; align-items:flex-start; background:#fff; border:1px solid var(--line); border-left: 5px solid #E8963A;
+          border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+.z-prob.FAIL { border-left-color: #D63A52; } .z-prob.OK { border-left-color: #0F9F6E; }
+.z-prob .ic { font-size: 1.1rem; line-height: 1.4; }
+.z-prob .tt { font-weight: 700; color: var(--txt); }
+.z-prob .tx { color: #334155; font-size: .93rem; margin-top: 2px; line-height: 1.45; }
+.z-chips { display:flex; flex-wrap: wrap; gap: 8px; }
+.z-chip { font-size: .82rem; padding: 4px 10px; border-radius: 999px; cursor: default; }
+.z-chip.ok { background: var(--greenbg); color: #0B7A55; } .z-chip.na { background: #F1F4F9; color: var(--muted); }
+
 /* review: keep the PDF in view while scrolling */
 [data-testid="stColumn"]:has(.st-key-pdfpane) { position: sticky !important; top: 84px !important; align-self: flex-start !important; }
 </style>
