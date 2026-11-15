@@ -6,6 +6,7 @@ import streamlit as st
 from app import helper_panel, ui
 from core import helper, llm, pipeline, queries as q
 from core.document import TechnicalError
+from core.money import inr
 
 conn = ui.conn()
 ui.header("Upload & Verify Invoice", "Drop a vendor invoice. Zamp reads it, checks it against your vendors, purchase orders and rules, and tells you what to do.")
@@ -41,22 +42,46 @@ with left:
             if c[1].button("Open earlier result", key="seen_open", use_container_width=True):
                 open_review(iid)
 
-    # ---- before upload (or after "Upload another"): one obvious action
+    # ---- before upload (or after "Upload another"): one compact card, one obvious action
     if not inv:
-        f = st.file_uploader("Drop your invoice PDF here, or click to browse", type=["pdf"], key=f"uploader_{st.session_state.get('upl_n', 0)}",
-                             help="PDF invoices, freight bills or scanned documents - up to 10 MB.")
-        st.markdown("<div class='z-muted' style='text-align:center;margin-top:-4px'>PDF · text or scanned · up to 10 MB</div>", unsafe_allow_html=True)
-        if f is not None:
-            c = st.columns([3, 1.3])
-            c[0].markdown(f"<div style='padding-top:8px'>📄 <b>{f.name}</b> <span class='z-muted'>· {f.size / 1024:.0f} KB</span></div>", unsafe_allow_html=True)
-            if c[1].button("Check invoice", type="primary", use_container_width=True, icon=":material/arrow_forward:"):
-                try:
-                    new_id, seen = pipeline.submit(conn, f.getvalue(), f.name)
-                    st.session_state.current_id = new_id
-                    st.session_state.seen_id = new_id if seen else None
-                    st.rerun()
-                except TechnicalError as e:
-                    st.error(f"Couldn't accept this file: {e}", icon="🚫")
+        with st.container(key="card_upload"):
+            st.markdown("<div class='z-uphead'><div class='i'>⬆</div><div><b>Upload invoice</b>"
+                        "<span>Vendor invoices, freight bills or scanned copies - one invoice per file.</span></div></div>", unsafe_allow_html=True)
+            f = st.file_uploader("Invoice PDF", type=["pdf"], key=f"uploader_{st.session_state.get('upl_n', 0)}", label_visibility="collapsed")
+            if f is None:
+                st.markdown("<div class='z-uphelp'><span>Only .pdf files · up to 10 MB</span><span>Text PDFs and scans both work</span></div>",
+                            unsafe_allow_html=True)
+            else:
+                c = st.columns([3, 1.4], vertical_alignment="center")
+                c[0].markdown(f"<div class='z-file'><div class='doc'>PDF</div><div style='min-width:0'><div class='nm'>{f.name}</div>"
+                              f"<div class='sub'>{f.size / 1024:.0f} KB · ready to check</div></div></div>", unsafe_allow_html=True)
+                if c[1].button("Check invoice", type="primary", use_container_width=True, icon=":material/arrow_forward:"):
+                    try:
+                        new_id, seen = pipeline.submit(conn, f.getvalue(), f.name)
+                        st.session_state.current_id = new_id
+                        st.session_state.seen_id = new_id if seen else None
+                        st.rerun()
+                    except TechnicalError as e:
+                        st.error(f"Couldn't accept this file: {e}", icon="🚫")
+
+        # fill the space with something useful: your latest uploads, or what will happen
+        recent = q.list_invoices(conn, {"source": "uploads"}, "Recently processed", 1, 4)[0]
+        st.write("")
+        if recent:
+            st.markdown("**Recent uploads**")
+            for r in recent:
+                with st.container(key=f"row_recent_{r['id']}"):
+                    c = st.columns([2.2, 1.6, 1.1, 0.7], vertical_alignment="center")
+                    c[0].markdown(ui.file_cell(r["invoice_number"] or r["filename"] or "", r["vendor_name"] or ""), unsafe_allow_html=True)
+                    c[1].markdown(ui.pill(r, with_sub=True), unsafe_allow_html=True)
+                    c[2].markdown(f"<span class='z-amt'>{inr(r['total'], decimals=0) if r['total'] is not None else '—'}</span>", unsafe_allow_html=True)
+                    if c[3].button("Open", key=f"recent_{r['id']}", type="tertiary", icon=":material/arrow_forward:"):
+                        open_review(r["id"])
+        else:
+            st.markdown("**What happens after you upload**")
+            st.markdown("<div class='z-flow'><div><b>1 · Read</b>AI reads the fields and quotes where each came from</div>"
+                        "<div><b>2 · Verify</b>every value is found again in the PDF</div><div><b>3 · Check</b>vendor, bank, PO, receipt, duplicates</div>"
+                        "<div><b>4 · Decide</b>Ready to Pay, Needs Attention or Blocked</div></div>", unsafe_allow_html=True)
 
     # ---- after the run: the result first, big
     if finished:

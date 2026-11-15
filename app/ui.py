@@ -55,11 +55,15 @@ div[data-testid="stVerticalBlockBorderWrapper"] { border-radius: 14px; }
 .z-tag { display:inline-block; font-size:.68rem; padding:0 6px; border-radius:6px; background: var(--sky); color: var(--blue); font-weight:600; margin-top:2px; }
 .z-sublabel { display:block; font-size:.74rem; color: var(--muted); margin-top:3px; }
 
-.z-kpi { border-radius: 14px; padding: 16px 18px; background: #fff; border: 1px solid var(--line); border-top: 4px solid var(--line); }
-.z-kpi .t { font-size: .85rem; color: var(--muted); font-weight: 600; }
-.z-kpi .v { font-size: 1.55rem; font-weight: 750; margin-top: 4px; color: var(--txt); }
-.z-kpi .n { font-size: .84rem; color: var(--muted); }
-.z-kpi.green { border-top-color: #22C55E; } .z-kpi.amber { border-top-color: #F59E0B; } .z-kpi.red { border-top-color: #EF4444; } .z-kpi.blue { border-top-color: var(--blue2); }
+.z-kpi { border-radius: 14px; padding: 14px 16px; background: #fff; border: 1px solid var(--line); display:flex; gap: 14px; align-items:center; }
+.z-kpi .ico { width: 44px; height: 44px; border-radius: 12px; flex: none; display:flex; align-items:center; justify-content:center; font-size: 1.25rem; font-weight: 800; }
+.z-kpi .t { font-size: .82rem; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; }
+.z-kpi .v { font-size: 1.5rem; font-weight: 800; line-height: 1.15; color: var(--txt); }
+.z-kpi .n { font-size: .82rem; color: var(--muted); }
+.z-kpi.green { background: #ECFBF2; border-color: #A9E5BF; } .z-kpi.green .ico { background: #16A34A; color: #fff; } .z-kpi.green .t { color: #15803D; }
+.z-kpi.amber { background: #FFF6E5; border-color: #F6D28B; } .z-kpi.amber .ico { background: #F59E0B; color: #fff; } .z-kpi.amber .t { color: #B45309; }
+.z-kpi.red   { background: #FEF0F0; border-color: #F5B5B5; } .z-kpi.red .ico { background: #DC2626; color: #fff; }   .z-kpi.red .t { color: #B91C1C; }
+.z-kpi.blue  { background: #EEF4FF; border-color: #BFD3FF; } .z-kpi.blue .ico { background: #2563EB; color: #fff; }  .z-kpi.blue .t { color: #1D4ED8; }
 
 /* stepper */
 .z-track { display:flex; align-items:flex-start; justify-content:space-between; margin: 6px 0 4px; }
@@ -95,18 +99,28 @@ div[data-testid="stVerticalBlockBorderWrapper"] { border-radius: 14px; }
 .z-check .cmp { color: var(--muted); font-size: .84rem; margin-top: 3px; }
 .z-na { color: var(--muted); font-size: .82rem; padding: 4px 0; }
 
-/* history rows */
-.z-thead { display:flex; color: var(--muted); font-size:.78rem; font-weight:650; text-transform:uppercase; letter-spacing:.04em; padding: 0 6px 6px; }
-[class*="st-key-row_"] { background:#fff; border:1px solid var(--line); border-radius: 12px; padding: 6px 10px; transition: all .12s; }
-[class*="st-key-row_"]:hover { border-color: var(--blue2); box-shadow: 0 4px 14px rgba(37,99,235,.10); }
-.z-row { display:flex; align-items:center; gap: 10px; min-height: 2.6rem; }
-.z-cell { font-size: .9rem; color: var(--txt); line-height: 1.3; padding-right: 6px; }
+/* history: one table card with divider rows */
+.st-key-card_table { background:#fff; border:1px solid var(--line); border-radius: 16px; padding: 16px 18px 10px; box-shadow: 0 1px 3px rgba(15,27,51,.05); }
+.z-tabletitle { font-size: 1.05rem; font-weight: 750; color: var(--txt); display:flex; align-items:center; gap: 8px; }
+.z-count { font-size: .74rem; font-weight: 700; background: var(--sky); color: var(--blue); border-radius: 999px; padding: 2px 9px; }
+.z-thead { display:flex; color: var(--muted); font-size:.74rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+           padding: 10px 12px; background: #F6F8FC; border-radius: 10px; margin: 8px 0 2px; }
+[class*="st-key-row_"] { border-bottom: 1px solid #EDF1F8; padding: 4px 12px !important; transition: background .12s; border-radius: 10px; }
+[class*="st-key-row_"]:hover { background: #F5F8FF; }
 [class*="st-key-row_"] [data-testid="stMarkdownContainer"] p { margin: 0; }
 [class*="st-key-row_"] [data-testid="stMarkdown"], [class*="st-key-row_"] [data-testid="stElementContainer"] { margin-bottom: 0 !important; }
-[class*="st-key-row_"] { padding: 10px 12px !important; }
-[class*="st-key-row_"] [data-testid="stColumn"] { align-self: center; }
-[data-testid="stLogo"] { height: 2.2rem; max-width: 15rem; }
+.z-cell { font-size: .9rem; color: var(--txt); line-height: 1.3; padding-right: 6px; }
 .z-reason { font-size: .86rem; color: #33445F; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.z-file { display:flex; align-items:center; gap: 10px; min-width: 0; }
+.z-file .doc { width: 34px; height: 38px; flex: none; border-radius: 7px; background: #FEECEC; color: #DC2626; font-size: .6rem; font-weight: 800;
+               display:flex; align-items:flex-end; justify-content:center; padding-bottom: 6px; position: relative; }
+.z-file .doc::before { content:""; position:absolute; top:7px; left:9px; right:9px; height:2px; background:#F7B4B4; box-shadow: 0 5px 0 #F7B4B4; border-radius:2px; }
+.z-file .nm { font-weight: 700; color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.z-file .sub { font-size: .74rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.z-vend { display:flex; align-items:center; gap: 9px; min-width: 0; }
+.z-av { width: 30px; height: 30px; border-radius: 50%; flex: none; display:flex; align-items:center; justify-content:center; font-size: .72rem; font-weight: 800; color: #fff; }
+.z-vend .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.z-amt { font-weight: 700; font-variant-numeric: tabular-nums; }
 
 /* ask panel */
 [class*="st-key-ask_"] { background:#fff; border: 1.5px solid #BFD3FF; border-radius: 16px; padding: 16px 16px 10px; }
@@ -117,15 +131,27 @@ div[data-testid="stVerticalBlockBorderWrapper"] { border-radius: 14px; }
 .z-teaser-q { border:1px dashed #CBD6EA; border-radius: 12px; padding: 10px 12px; margin: 6px 0; color:#9AA8C0; font-size:.9rem; }
 div[data-testid="stChatMessage"] { background: #F7FAFF; border: 1px solid #E3EBFA; border-radius: 12px; }
 
-/* upload drop zone */
-[data-testid="stFileUploaderDropzone"] { background: #fff; border: 2px dashed #9DB8F5; border-radius: 18px; padding: 56px 30px; min-height: 230px;
-  display:flex; flex-direction: column; align-items:center; justify-content:center; gap: 14px; text-align:center; }
-[data-testid="stFileUploaderDropzone"]::before { content: "⬆"; font-size: 2rem; color: #2563EB; background: #EAF1FF; width: 64px; height: 64px;
-  border-radius: 18px; display:flex; align-items:center; justify-content:center; }
-[data-testid="stFileUploaderDropzoneInstructions"] { align-items:center; text-align:center; }
-[data-testid="stFileUploaderDropzone"] button { background: #2563EB; color: #fff; border: 0; padding: 8px 22px; border-radius: 10px; font-weight: 600; }
-[data-testid="stFileUploader"] > label p { font-size: 1.05rem; font-weight: 650; color: #0F1B33; }
-[data-testid="stFileUploaderDropzone"]:hover { background: var(--sky); border-color: var(--blue); }
+/* upload: one compact card with a tinted drop area */
+.st-key-card_upload { background:#fff; border:1px solid var(--line); border-radius: 16px; padding: 18px 20px 14px; box-shadow: 0 4px 16px rgba(15,27,51,.06); }
+.z-uphead { display:flex; align-items:center; gap: 12px; margin-bottom: 4px; }
+.z-uphead .i { width: 40px; height: 40px; border-radius: 11px; background: var(--sky); color: var(--blue); display:flex; align-items:center; justify-content:center; font-size: 1.2rem; }
+.z-uphead b { font-size: 1.08rem; color: var(--txt); display:block; } .z-uphead span { font-size: .85rem; color: var(--muted); }
+.st-key-card_upload [data-testid="stFileUploaderDropzone"] { background: #F3F7FF; border: 1.5px dashed #9DB8F5; border-radius: 14px; padding: 26px 20px; min-height: 0;
+  display:flex; flex-direction: column; align-items:center; justify-content:center; gap: 10px; text-align:center; }
+.st-key-card_upload [data-testid="stFileUploaderDropzone"]:hover { background: #EAF1FF; border-color: var(--blue); }
+.st-key-card_upload [data-testid="stFileUploaderDropzone"]::before { content: ""; width: 46px; height: 52px; order: 0;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 46 52'><path d='M6 2h24l12 12v32a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V6a4 4 0 0 1 4-4z' fill='%23ffffff' stroke='%232563EB' stroke-width='2.5'/><path d='M30 2v12h12' fill='none' stroke='%232563EB' stroke-width='2.5'/><rect x='6' y='30' width='26' height='13' rx='3' fill='%23DC2626'/><text x='19' y='40' font-family='Arial' font-size='8.5' font-weight='700' fill='white' text-anchor='middle'>PDF</text><path d='M16 22l7-7 7 7M23 15v11' fill='none' stroke='%232563EB' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/></svg>") no-repeat center / contain; }
+.st-key-card_upload [data-testid="stFileUploaderDropzoneInstructions"] { order: 1; }
+.st-key-card_upload [data-testid="stFileUploaderDropzoneInstructions"] span { font-size: 0 !important; }
+.st-key-card_upload [data-testid="stFileUploaderDropzoneInstructions"] span::before { content: "Drag & drop your invoice here, or"; font-size: .98rem; color: var(--txt); font-weight: 600; }
+.st-key-card_upload [data-testid="stFileUploaderDropzone"] > span { order: 2; }
+.st-key-card_upload [data-testid="stFileUploaderDropzone"] button { background: #fff; color: var(--blue); border: 1px solid #BFD3FF; padding: 6px 18px; border-radius: 10px; font-weight: 650; }
+.st-key-card_upload [data-testid="stFileUploaderDropzone"] button:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+.z-uphelp { display:flex; justify-content: space-between; font-size: .8rem; color: var(--muted); margin-top: 8px; }
+.z-recent { display:flex; align-items:center; gap: 10px; }
+.z-flow { display:flex; gap: 8px; flex-wrap: wrap; }
+.z-flow div { flex: 1; min-width: 120px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: .84rem; color: #33445F; }
+.z-flow b { display:block; color: var(--txt); font-size: .86rem; margin-bottom: 2px; }
 .stButton > button[kind="primary"] { background: var(--blue); border: 0; }
 .stButton > button[kind="primary"]:hover { background: #1D4ED8; }
 
@@ -189,16 +215,34 @@ def pill(inv, with_sub=False):
     return out
 
 
-def kpi(kind, title, amount, count):
-    st.markdown(f"<div class='z-kpi {kind}'><div class='t'>{html.escape(title)}</div>"
-                f"<div class='v'>{inr(amount, decimals=0)}</div><div class='n'>{count} invoice{'s' if count != 1 else ''}</div></div>",
-                unsafe_allow_html=True)
+KPI_ICON = {"green": "✓", "amber": "!", "red": "✕", "blue": "≡"}
+
+
+def kpi(kind, title, amount, count, share=None):
+    sub = f"{count} invoice{'s' if count != 1 else ''}" + (f" · {share:.0%} of value" if share is not None else "")
+    st.markdown(f"<div class='z-kpi {kind}'><div class='ico'>{KPI_ICON[kind]}</div><div><div class='t'>{html.escape(title)}</div>"
+                f"<div class='v'>{inr(amount, decimals=0)}</div><div class='n'>{sub}</div></div></div>", unsafe_allow_html=True)
+
+
+AV_COLORS = ["#2563EB", "#7C3AED", "#0891B2", "#DB2777", "#EA580C", "#059669", "#4F46E5", "#B45309"]
+
+
+def avatar(name):
+    words = [w for w in (name or "?").replace(".", " ").split() if w[:1].isalnum()]
+    ini = "".join(w[0] for w in words[:2]).upper() or "?"
+    col = AV_COLORS[sum(map(ord, name or "?")) % len(AV_COLORS)]
+    return f"<span class='z-av' style='background:{col}'>{html.escape(ini)}</span>"
+
+
+def file_cell(number, sub):
+    return (f"<div class='z-file'><div class='doc'>PDF</div><div style='min-width:0'><div class='nm'>{html.escape(number)}</div>"
+            f"<div class='sub'>{sub}</div></div></div>")
 
 
 def stat(kind, title, value, note):
     """A small number card (used where the value isn't money)."""
-    st.markdown(f"<div class='z-kpi {kind}'><div class='t'>{html.escape(title)}</div><div class='v'>{html.escape(str(value))}</div>"
-                f"<div class='n'>{html.escape(note)}</div></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='z-kpi {kind}'><div class='ico'>{KPI_ICON[kind]}</div><div><div class='t'>{html.escape(title)}</div>"
+                f"<div class='v'>{html.escape(str(value))}</div><div class='n'>{html.escape(note)}</div></div></div>", unsafe_allow_html=True)
 
 
 def secs(x):
