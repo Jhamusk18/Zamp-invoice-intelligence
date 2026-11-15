@@ -225,15 +225,23 @@ with right:
             else:
                 st.markdown("<div class='rv-note'>Blocked by the rules, so it can't be approved with a click.</div>", unsafe_allow_html=True)
         else:
-            st.markdown("<div class='z-muted' style='margin:6px 0 2px'>What we found - edit it into your note (saved with your decision)</div>", unsafe_allow_html=True)
+            label = ("What we found - edit it into your note (saved with your decision)" if found
+                     else "Your note (saved with your decision)")
+            st.markdown(f"<div class='z-muted' style='margin:6px 0 2px'>{label}</div>", unsafe_allow_html=True)
             reason = st.text_area("Your note", value=" ".join(found) if found else "", height=90, key=f"txt_{iid}", label_visibility="collapsed",
-                                  placeholder="Why are you approving or blocking this invoice?").strip()
-            # only real decisions: Ready to Pay or Blocked (no "Needs Attention" - it would change nothing)
-            opts = [t for a_, t in (("approve", "APPROVED"), ("reject", "REJECTED")) if a_ in acts]
-            choice = st.radio("Decision", opts, index=None, format_func=lambda x: {"APPROVED": "Ready to Pay", "REJECTED": "Blocked"}[x],
+                                  placeholder=("Why are you pulling this invoice back?" if s_ == "APPROVED"
+                                               else "Why are you approving or blocking this invoice?")).strip()
+            # the three statuses, as in the design; the current status is pre-selected
+            opts = ["FLAGGED", "APPROVED", "REJECTED"]
+            choice = st.radio("Decision", opts, index=opts.index(s_) if s_ in opts else None,
+                              format_func=lambda x: {"FLAGGED": "Needs Attention", "APPROVED": "Ready to Pay", "REJECTED": "Blocked"}[x],
                               horizontal=True, key=f"st_{iid}", label_visibility="collapsed")
             if s_ == "APPROVED":
-                st.markdown("<span class='z-muted'>Already Ready to Pay - you can still pull it back with Blocked.</span>", unsafe_allow_html=True)
+                st.markdown("<span class='z-muted'>Every check passed, so this invoice is already <b>Ready to Pay</b>. "
+                            "Choose <b>Blocked</b> only if you need to pull it back.</span>", unsafe_allow_html=True)
+            elif choice == "FLAGGED":
+                st.markdown("<span class='z-muted'><b>Needs Attention</b> keeps the invoice on hold - nothing changes. "
+                            "Use the email below to ask the vendor to fix the issue.</span>", unsafe_allow_html=True)
             if choice == "APPROVED" and "BANK_CHANGED" in (inv["reason_codes"] or ""):
                 st.warning("The bank account differs from our records. Only mark Ready to Pay after calling the vendor on the number **on file**.", icon="📞")
 
@@ -243,13 +251,13 @@ with right:
     elif not acts:
         e_action, e_reason = "reject", inv["primary_reason"] or ""
     elif choice:
-        e_action = {"APPROVED": "approve", "REJECTED": "reject"}[choice]
+        e_action = {"APPROVED": "approve", "REJECTED": "reject", "FLAGGED": "hold"}[choice]
         e_reason = reason or inv["primary_reason"] or ""
     else:
         e_action = None
     if e_action is None:
         with st.container(key="card_email"):
-            st.markdown("<div class='rv-h'><svg viewBox='0 0 24 24' width='26' height='26' fill='none' stroke='#2F5BEA' stroke-width='1.9' stroke-linejoin='round'><rect x='3' y='5' width='18' height='14' rx='2.5'/><path d='M3.5 6.5l8.5 6.5 8.5-6.5'/></svg><span>Email to Vendor</span></div><div class='z-muted' style='margin-top:6px'>Pick <b>Ready to Pay</b> or <b>Reject</b> above "
+            st.markdown("<div class='rv-h'><svg viewBox='0 0 24 24' width='26' height='26' fill='none' stroke='#2F5BEA' stroke-width='1.9' stroke-linejoin='round'><rect x='3' y='5' width='18' height='14' rx='2.5'/><path d='M3.5 6.5l8.5 6.5 8.5-6.5'/></svg><span>Email to Vendor</span></div><div class='z-muted' style='margin-top:6px'>Pick <b>Ready to Pay</b> or <b>Blocked</b> above "
                         "and a ready-to-send email for the vendor appears here.</div>", unsafe_allow_html=True)
     else:
         e = explain.reviewer_email(conn, iid, e_action, e_reason)
@@ -279,10 +287,10 @@ with right:
     # ---- Actions
     if acts:
         with st.container(key="card_actions"):
-            changed = choice is not None
+            changed = choice is not None and choice != s_ and {"APPROVED": "approve", "REJECTED": "reject"}.get(choice) in acts
             a = st.columns([2.2, 1, 1.3], vertical_alignment="center")
             a[0].markdown("<span class='z-muted'>" + ("Saving records your decision and note in the audit trail." if changed else
-                          "Pick <b>Ready to Pay</b> or <b>Blocked</b> to record your decision.") + "</span>", unsafe_allow_html=True)
+                          ("Choose <b>Ready to Pay</b> or <b>Blocked</b> to record a decision." if s_ != "APPROVED" else "Already Ready to Pay - choose <b>Blocked</b> to pull it back.")) + "</span>", unsafe_allow_html=True)
             if a[1].button("Cancel", use_container_width=True):
                 st.switch_page(st.session_state.pages["history"])
             if a[2].button("Save review", type="primary", icon=":material/check:", use_container_width=True, disabled=not (changed and reason)):
