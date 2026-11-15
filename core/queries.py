@@ -141,3 +141,11 @@ def reviewer_note(conn, iid):
     if a:
         a["details"] = json.loads(a["details"] or "{}")
     return a
+
+
+def reviewer_notes(conn, iid, limit=3):
+    """Latest notes a reviewer saved without changing the status."""
+    out = rows(conn, "SELECT actor, ts, details FROM audit_log WHERE invoice_id=? AND action='REVIEWER_NOTE' ORDER BY id DESC LIMIT ?", (iid, limit))
+    for a in out:
+        a["details"] = json.loads(a["details"] or "{}")
+    return out

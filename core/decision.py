@@ -121,3 +121,16 @@ def reviewer_action(conn, invoice_id: int, action: str, reason: str, actor: str 
 
 def reason_label(code):
     return REASON_LABEL.get(code, code)
+
+
+def reviewer_note_only(conn, invoice_id: int, note: str, actor: str = "Demo Reviewer"):
+    """Save a reviewer's note without changing the status (e.g. 'called the vendor, waiting for reply').
+    Recorded in the append-only audit trail like every other action."""
+    note = (note or "").strip()
+    if len(note) < 5:
+        raise ValueError("Write a short note first (at least a few words).")
+    with tx(conn):
+        inv = row(conn, "SELECT status, run_state FROM invoices WHERE id=?", (invoice_id,))
+        if not inv or inv["run_state"] != "DONE":
+            raise PermissionError("This invoice hasn't finished processing.")
+        audit(conn, actor, "REVIEWER_NOTE", invoice_id, reason=note, status=inv["status"])

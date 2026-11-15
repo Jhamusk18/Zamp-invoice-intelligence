@@ -240,8 +240,12 @@ with right:
                 st.markdown("<span class='z-muted'>Every check passed, so this invoice is already <b>Ready to Pay</b>. "
                             "Choose <b>Blocked</b> only if you need to pull it back.</span>", unsafe_allow_html=True)
             elif choice == "FLAGGED":
-                st.markdown("<span class='z-muted'><b>Needs Attention</b> keeps the invoice on hold - nothing changes. "
-                            "Use the email below to ask the vendor to fix the issue.</span>", unsafe_allow_html=True)
+                st.markdown("<span class='z-muted'><b>Needs Attention</b> keeps the invoice on hold. Saving stores your note; "
+                            "use the email below to ask the vendor to fix the issue.</span>", unsafe_allow_html=True)
+            for n_ in q.reviewer_notes(conn, iid):
+                st.markdown(f"<div class='rv-note' style='margin-top:8px'>📝 <b>Note by {html.escape(n_['actor'])}</b> "
+                            f"<span class='z-muted'>· {datetime.fromtimestamp(n_['ts']):%d %b, %H:%M}</span><br>{html.escape(n_['details'].get('reason', ''))}</div>",
+                            unsafe_allow_html=True)
             if choice == "APPROVED" and "BANK_CHANGED" in (inv["reason_codes"] or ""):
                 st.warning("The bank account differs from our records. Only mark Ready to Pay after calling the vendor on the number **on file**.", icon="📞")
 
@@ -281,25 +285,39 @@ with right:
             with bb[0]:
                 copy_button(f"To: {e['to']}\nSubject: {e['subject']}\n\n{body}", f"cp_{iid}")
             if "@" in e["to"]:
-                bb[1].link_button("Open in Email App", f"mailto:{e['to']}?subject={quote(e['subject'])}&body={quote(body)}", type="primary",
-                                  icon=":material/send:", use_container_width=True)
+                gmail = (f"https://mail.google.com/mail/?view=cm&fs=1&to={quote(e['to'])}&su={quote(e['subject'])}&body={quote(body)}")
+                bb[1].link_button("Open in Gmail", gmail, type="primary", icon=":material/send:", use_container_width=True)
+                st.markdown(f"<div class='z-muted' style='text-align:right;margin-top:-4px'>or <a href='mailto:{e['to']}?subject={quote(e['subject'])}"
+                            f"&body={quote(body)}'>open in your default mail app</a></div>", unsafe_allow_html=True)
 
     # ---- Actions
     if acts:
         with st.container(key="card_actions"):
-            changed = choice is not None and choice != s_ and {"APPROVED": "approve", "REJECTED": "reject"}.get(choice) in acts
+            changed = choice is not None and choice != s_
+            allowed = (not changed) or {"APPROVED": "approve", "REJECTED": "reject"}.get(choice) in acts
+            if not allowed:
+                hint = "A Ready to Pay invoice can't go back to Needs Attention - choose <b>Blocked</b> to pull it back."
+            elif changed:
+                hint = f"Saving marks it <b>{ {'APPROVED': 'Ready to Pay', 'REJECTED': 'Blocked'}[choice] }</b> and stores your note in the audit trail."
+            else:
+                hint = "Status stays the same - saving stores your note in the audit trail."
             a = st.columns([2.2, 1, 1.3], vertical_alignment="center")
-            a[0].markdown("<span class='z-muted'>" + ("Saving records your decision and note in the audit trail." if changed else
-                          ("Choose <b>Ready to Pay</b> or <b>Blocked</b> to record a decision." if s_ != "APPROVED" else "Already Ready to Pay - choose <b>Blocked</b> to pull it back.")) + "</span>", unsafe_allow_html=True)
+            a[0].markdown(f"<span class='z-muted'>{hint}</span>", unsafe_allow_html=True)
             if a[1].button("Cancel", use_container_width=True):
                 st.switch_page(st.session_state.pages["history"])
-            if a[2].button("Save review", type="primary", icon=":material/check:", use_container_width=True, disabled=not (changed and reason)):
+            if a[2].button("Save review", type="primary", icon=":material/check:", use_container_width=True,
+                           disabled=not (choice and allowed and reason and len(reason) >= 5)):
                 try:
-                    new = decision.reviewer_action(conn, iid, "approve" if choice == "APPROVED" else "reject", reason)
+                    if changed:
+                        new = decision.reviewer_action(conn, iid, "approve" if choice == "APPROVED" else "reject", reason)
+                        msg = f"Saved: {LABEL[new]}. Recorded in the audit trail."
+                    else:
+                        decision.reviewer_note_only(conn, iid, reason)
+                        msg = "Note saved. Status unchanged."
                     for k in list(st.session_state.keys()):
                         if isinstance(k, str) and k.startswith((f"txt_{iid}", f"st_{iid}", f"edit_{iid}", f"body_{iid}")):
                             del st.session_state[k]
-                    st.toast(f"Saved: {LABEL[new]}. Recorded in the audit trail.", icon="✅")
+                    st.toast(msg, icon="✅")
                     st.rerun()
                 except (ValueError, PermissionError) as err:
                     st.error(str(err))

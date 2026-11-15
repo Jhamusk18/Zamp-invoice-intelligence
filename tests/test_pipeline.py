@@ -69,3 +69,14 @@ def test_reprocessing_does_not_double_count(conn):
 def test_locked_rules_cannot_be_disabled(conn):
     v = policy.save(conn, {**policy.DEFAULT_POLICY, "rules": {**policy.DEFAULT_POLICY["rules"], "bank": False}})
     assert policy.get(conn, v)["rules"]["bank"] is True
+
+
+def test_reviewer_can_save_a_note_without_changing_status(conn):
+    _, inv = run(conn, "D3_bank_change_injection")
+    decision.reviewer_note_only(conn, inv["id"], "Called Globex on the number on file, waiting for confirmation")
+    after = db.row(conn, "SELECT status, decided_by FROM invoices WHERE id=?", (inv["id"],))
+    assert after["status"] == "FLAGGED" and after["decided_by"] == "system"
+    note = db.row(conn, "SELECT action, details FROM audit_log WHERE invoice_id=? ORDER BY id DESC LIMIT 1", (inv["id"],))
+    assert note["action"] == "REVIEWER_NOTE" and "waiting for confirmation" in note["details"]
+    with pytest.raises(ValueError):
+        decision.reviewer_note_only(conn, inv["id"], "")
