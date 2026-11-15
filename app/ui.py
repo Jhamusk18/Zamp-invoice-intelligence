@@ -182,7 +182,7 @@ div[data-testid="stChatMessage"] { background: #F7FAFF; border: 1px solid #E3EBF
 [class*="st-key-mail_"] [data-testid="stHorizontalBlock"] { padding: 10px 16px 14px; border-top: 1px solid #EDF1F8; background: #F8FAFE; }
 
 /* review: keep the PDF in view while scrolling */
-.st-key-pdfpane { position: sticky; top: 4.4rem; }
+[data-testid="stColumn"]:has(.st-key-pdfpane) { position: sticky !important; top: 84px !important; align-self: flex-start !important; }
 </style>
 """
 
@@ -300,11 +300,9 @@ def verdict(inv, next_step=None):
     s = inv["status"]
     reason = inv["primary_reason"] or ""
     rev = ""
-    if inv["decided_by"] == "reviewer":
-        note = q.reviewer_note(conn(), inv["id"])
-        if note:
-            rev = f"<div class='r'><b>Reviewer:</b> {html.escape(note['details'].get('reason', ''))} <span class='z-muted'>(system said: {html.escape(reason)})</span></div>"
-            reason = ""
+    if inv["decided_by"] == "reviewer":  # the reviewer's own reason is shown once, in the decision strip below
+        rev = f"<div class='r'><span class='z-muted'>The rules said:</span> {html.escape(reason)}</div>"
+        reason = ""
     nx = f"<div class='nx'><b>What to do next:</b> {html.escape(next_step)}</div>" if next_step else ""
     st.markdown(f"<div class='z-verdict {s}'><div class='row1'>{pill(inv)}"
                 f"<span class='z-muted'>{'decided by a reviewer' if inv['decided_by'] == 'reviewer' else 'decided by the rules'}</span>"

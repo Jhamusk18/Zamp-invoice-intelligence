@@ -30,24 +30,23 @@ if iid not in order:
 pos = order.index(iid) if iid in order else 0
 name = inv["invoice_number"] or inv["filename"]
 
-h = st.columns([5.2, 1.9, 0.45, 0.8, 0.45], vertical_alignment="center")
-with h[0]:
-    if st.button(f"History  /  {name}", type="tertiary", icon=":material/arrow_back:"):
-        st.switch_page(st.session_state.pages["history"])
+if st.button(f"History  /  {name}", type="tertiary", icon=":material/arrow_back:"):
+    st.switch_page(st.session_state.pages["history"])
+src = "sample history (values known, no AI)" if inv["source"] == "seed" else "uploaded"
+h = st.columns([4.6, 1.75, 0.38, 0.62, 0.38], vertical_alignment="center", gap="small")
+h[0].markdown(f"<h1 style='margin:0'>{html.escape(name)}</h1>"
+              f"<div class='z-sub' style='margin:4px 0 0'><b style='color:#0F172A'>{html.escape(inv['vendor_name'] or 'Unknown vendor')}</b> · "
+              f"{inr(inv['total'], decimals=0) if inv['total'] is not None else '—'} · invoice date {inv['invoice_date'] or '—'}"
+              f"<span class='z-muted'> &nbsp;·&nbsp; {src}{' · policy v' + str(inv['policy_version']) if inv['policy_version'] else ''}</span></div>",
+              unsafe_allow_html=True)
 with h[1].popover("Ask about this invoice", icon=":material/chat:", use_container_width=True):
     helper_panel.render(conn, iid, "rv", height=300)
-if h[2].button("‹", disabled=pos == 0, help="Previous invoice"):
+if h[2].button("‹", disabled=pos == 0, help="Previous invoice", use_container_width=True):
     st.switch_page(st.session_state.pages["review"], query_params={"id": str(order[pos - 1])})
-h[3].markdown(f"<div style='text-align:center' class='z-muted'>{pos + 1} of {len(order)}</div>", unsafe_allow_html=True)
-if h[4].button("›", disabled=pos >= len(order) - 1, help="Next invoice"):
+h[3].markdown(f"<div style='text-align:center;white-space:nowrap' class='z-muted'>{pos + 1} of {len(order)}</div>", unsafe_allow_html=True)
+if h[4].button("›", disabled=pos >= len(order) - 1, help="Next invoice", use_container_width=True):
     st.switch_page(st.session_state.pages["review"], query_params={"id": str(order[pos + 1])})
-
-src = "sample history (values known, no AI)" if inv["source"] == "seed" else "uploaded"
-st.markdown(f"<h1 style='margin:2px 0 0'>{html.escape(name)}</h1>"
-            f"<div class='z-sub' style='margin-top:2px'><b style='color:#0F1B33'>{html.escape(inv['vendor_name'] or 'Unknown vendor')}</b> · "
-            f"{inr(inv['total'], decimals=0) if inv['total'] is not None else '—'} · invoice date {inv['invoice_date'] or '—'}"
-            f"<span class='z-muted'> &nbsp;·&nbsp; {src}{' · policy v' + str(inv['policy_version']) if inv['policy_version'] else ''}</span></div>",
-            unsafe_allow_html=True)
+st.write("")
 
 left, right = st.columns([1, 1.15], gap="large")
 
@@ -58,6 +57,9 @@ with left:
         doc = pymupdf.open(stream=data, filetype="pdf")
         z = st.session_state.setdefault(f"zoom_{iid}", 1.0)
         pg = st.session_state.setdefault(f"page_{iid}", 0)
+        png = doc[pg].get_pixmap(dpi=int(110 * z)).tobytes("png")
+        with st.container(height=800, border=True):
+            st.image(png, use_container_width=z <= 1.0)
         tb = st.columns([0.7, 1.1, 0.7, 0.7, 0.7, 2.3], vertical_alignment="center")
         if tb[0].button("‹", key="pp", disabled=pg == 0, help="Previous page"):
             st.session_state[f"page_{iid}"] -= 1
@@ -74,9 +76,6 @@ with left:
             st.rerun()
         tb[5].download_button("Download", data, file_name=inv["filename"] or "invoice.pdf", mime="application/pdf",
                               icon=":material/download:", use_container_width=True)
-        png = doc[pg].get_pixmap(dpi=int(110 * z)).tobytes("png")
-        with st.container(height=700, border=True):
-            st.image(png, use_container_width=z <= 1.0)
         st.markdown(f"<div class='z-muted'>Zoom {int(z * 100)}% · {'original scan' if inv['is_scanned'] else 'original PDF'}</div>", unsafe_allow_html=True)
 
 # ---------------- right: result → your decision → tabs
@@ -98,6 +97,11 @@ def plain(f):
     if c == "VENDOR":
         return f"Name on the invoice: “{a_}”; our vendor record: {e}."
     if c == "PO_MATCH":
+        if f["reason_code"] == "PO_INFERRED":
+            best = (f["details"].get("candidates") or [{}])[0].get("po_number", "a suggested PO")
+            return f"No PO number printed on the invoice; best match is {best}."
+        if f["reason_code"] == "NO_PO":
+            return "No PO number printed on the invoice, and no open PO of this vendor fits."
         return f"PO number on the invoice: {a_}; matched to: {e}."
     if c == "AUTO_LIMIT":
         return f"Invoice total {a_}; limit {e.replace('≤ ', '')}."
@@ -116,11 +120,14 @@ def check_html(f, with_cmp=True):
             f"<div class='ms'>{html.escape(f['message'])}</div>" + (f"<div class='cmp'>{html.escape(cmp)}</div>" if cmp else "") + "</div></div>")
 
 
-def show_email(action, reason):
-    """Ready-to-copy vendor email for this decision (fixed template, no AI). Nothing is sent."""
+def show_email(action, reason, folded=False):
+    """Ready-to-copy vendor email for this decision (fixed template, no AI). Nothing is sent.
+    folded=True (decision already made): a compact bar you click open."""
+    from contextlib import nullcontext
     from urllib.parse import quote
     e = explain.reviewer_email(conn, iid, action, reason)
-    with st.container(key=f"mail_{action}"):
+    outer = st.expander(f"✉️  Email to the vendor  ·  {e['subject']}  ·  ready to copy", expanded=False) if folded else nullcontext()
+    with outer, st.container(key=f"mail_{action}"):
         st.markdown(f"<div class='z-mailhead'><span>✉️</span><b>Email to the vendor</b><span class='z-draft'>Draft · not sent</span></div>"
                     f"<div class='z-mailfield'><span>To</span><div>{html.escape(e['to'])} <i class='z-muted'>(address on file)</i></div></div>"
                     f"<div class='z-mailfield'><span>Subject</span><div><b>{html.escape(e['subject'])}</b></div></div>", unsafe_allow_html=True)
@@ -156,7 +163,7 @@ with right:
                 else:
                     st.markdown("<span class='z-muted'>Already decided. See the Audit Trail.</span>", unsafe_allow_html=True)
                 if note:
-                    show_email("approve" if note["action"] == "REVIEWER_APPROVE" else "reject", note["details"].get("reason", ""))
+                    show_email("approve" if note["action"] == "REVIEWER_APPROVE" else "reject", note["details"].get("reason", ""), folded=True)
         else:
             labels = {"approve": "✅ Approve", "reject": "⛔ Reject"}
             act = st.segmented_control("Action", [a for a in ("approve", "reject") if a in acts], format_func=lambda a: labels[a],
@@ -197,7 +204,8 @@ with right:
     # ---- Checks: problems first; passed folded; not-applicable as a muted line
     with tabs[0]:
         if inv["explanation"]:
-            st.markdown(f"<div class='z-card' style='margin-bottom:12px'><b>Summary</b><br><span style='color:#33445F'>{html.escape(inv['explanation'])}</span></div>",
+            stitle = "Rules' summary <span class='z-muted' style='font-weight:400'>(written before the reviewer's decision)</span>" if inv["decided_by"] == "reviewer" else "Summary"
+            st.markdown(f"<div class='z-card' style='margin-bottom:12px'><b>{stitle}</b><br><span style='color:#33445F'>{html.escape(inv['explanation'])}</span></div>",
                         unsafe_allow_html=True)
         bad = sorted([f for f in fs if f["result"] in ("WARN", "FAIL")], key=lambda f: f["result"] != "FAIL")
         if bad:
