@@ -23,12 +23,12 @@ def render():
             "GSTINs are invented, so only their **format** is checked (15 characters, state code, PAN pattern), not the official checksum.",
         ],
         "⚖️ Decisions": [
-            "Outcomes: **Ready to Pay**, **Needs Attention**, **Blocked**. The most severe finding wins; all reasons are listed.",
+            "Outcomes: **Ready to Pay**, **Needs Attention**, **Rejected**. The most severe finding wins; all reasons are listed.",
             "AI reads the invoice and writes explanations. **Python rules make every decision**; the AI never sees or sets a status.",
-            f"Current policy v{ver}: price tolerance {pol['tolerance_pct']:g}% (max ₹{pol['tolerance_cap']:,.0f}/line), blocked above "
+            f"Current policy v{ver}: price tolerance {pol['tolerance_pct']:g}% (max ₹{pol['tolerance_cap']:,.0f}/line), rejected above "
             f"{pol['reject_variance_pct']:g}%, auto-approve limit ₹{pol['auto_approve_limit']:,.0f}.",
             "An inferred PO, an unverified key value or a bank change is never auto-approved.",
-            "A person can approve or reject a Needs Attention invoice (reason required). A system-Blocked invoice can't be approved by a click.",
+            "A person can approve or reject a Needs Attention invoice (reason required). A system-Rejected invoice can't be approved by a click.",
             "PO money: Needs Attention **reserves** the amount, approval **commits** it, rejection **releases** it. The next invoice on the PO sees "
             "what's left after both. Changing the policy does not touch existing reservations; only newly processed invoices use the new rules.",
             "A possible duplicate needs the same vendor and amount **plus** a similar invoice number or a date within "

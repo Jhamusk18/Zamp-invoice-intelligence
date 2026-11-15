@@ -20,7 +20,7 @@ MENU = {  # order = order shown (most useful first)
     "source": "Was it read correctly?",
     "start": "Start over",
 }
-DECIDED_LABEL = {"APPROVED": "Why is it OK?", "FLAGGED": "Why is it held?", "REJECTED": "Why is it blocked?"}
+DECIDED_LABEL = {"APPROVED": "Why is it OK?", "FLAGGED": "Why is it held?", "REJECTED": "Why is it rejected?"}
 OUT_OF_SCOPE = "Sorry, I can only help with this invoice 🙂 Pick one of the options below."
 
 KEYWORDS = [  # free-typed text -> menu item (no AI involved)
@@ -54,7 +54,7 @@ def summary_sentence(inv):
     if inv["status"] == "APPROVED":
         return (f"**Ready to Pay** - approved by a reviewer. Want to see what was checked?" if inv["decided_by"] == "reviewer"
                 else "**Ready to Pay** - every check passed. Want to see what was checked?")
-    head = {"FLAGGED": "Needs attention", "REJECTED": "Blocked"}[inv["status"]]
+    head = {"FLAGGED": "Needs attention", "REJECTED": "Rejected"}[inv["status"]]
     return f"**{head}**: {r}. Want to see why?"
 
 
@@ -73,7 +73,7 @@ def next_step(conn, iid):
 
 
 def greeting(inv):
-    state = {"APPROVED": "It's **ready to pay** ✅", "FLAGGED": "It **needs your attention** ⚠️", "REJECTED": "It's **blocked** ⛔"}[inv["status"]]
+    state = {"APPROVED": "It's **ready to pay** ✅", "FLAGGED": "It **needs your attention** ⚠️", "REJECTED": "It's **rejected** ⛔"}[inv["status"]]
     return (f"Hi! 👋 I've checked invoice **{inv['invoice_number'] or inv['filename']}** from {inv['vendor_name'] or 'an unknown vendor'}. "
             f"{state}\n\nLet me know what you'd like to know.")
 
@@ -252,7 +252,7 @@ def _decided(conn, iid):
     passed = sum(1 for f in fs if f["result"] == "PASS")
     if not bad:
         return f"Everything matched ✅ All {passed} checks passed, so it's **Ready to Pay**." + MORE
-    head = "It's **blocked** because:" if i["status"] == "REJECTED" else "It's **on hold** because:"
+    head = "It's **rejected** because:" if i["status"] == "REJECTED" else "It's **on hold** because:"
     lines = [f"• {short_text(f)}" for f in bad[:3]] + ([f"• …and {len(bad) - 3} more"] if len(bad) > 3 else [])
     return "\n".join([head] + lines + [f"\nThe other {passed} checks passed ✅"]) + MORE
 
@@ -268,7 +268,7 @@ def _next(conn, iid):
     step = NEXT_STEP[first].replace("**", "") if first else "Look at the problems on this page."
     if i["status"] == "REJECTED":
         return f"Don't pay it. {step}" + MORE
-    return (f"1. {step}\n2. Then choose **Ready to Pay** or **Blocked** on the Review page.\n"
+    return (f"1. {step}\n2. Then choose **Ready to Pay** or **Rejected** on the Review page.\n"
             "3. Copy the email we prepare for the vendor.") + MORE
 
 

@@ -8,7 +8,7 @@ SORTS = {"Invoice date (newest)": "invoice_date DESC, id DESC", "Invoice date (o
          "Amount (high → low)": "total DESC", "Amount (low → high)": "total ASC",
          "Status (most severe first)": "CASE status WHEN 'REJECTED' THEN 0 WHEN 'FLAGGED' THEN 1 WHEN 'APPROVED' THEN 2 ELSE 3 END, invoice_date DESC",
          "Recently processed": "id DESC"}
-STATUS_KEYS = {"Ready to Pay": "APPROVED", "Needs Attention": "FLAGGED", "Blocked": "REJECTED"}
+STATUS_KEYS = {"Ready to Pay": "APPROVED", "Needs Attention": "FLAGGED", "Rejected": "REJECTED"}
 
 
 def _where(f: dict):

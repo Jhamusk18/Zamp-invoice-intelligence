@@ -12,7 +12,7 @@ DEFAULT_POLICY = {
     # price variance bands, per PO line (amounts compared BEFORE tax)
     "tolerance_pct": 2.0,          # within this -> pass
     "tolerance_cap": 10000.0,      # ...and never more than this many rupees per line
-    "reject_variance_pct": 5.0,    # above this -> Blocked; between the two -> Needs Attention
+    "reject_variance_pct": 5.0,    # above this -> Rejected; between the two -> Needs Attention
     "qty_tolerance_pct": 0.0,      # billed qty may exceed (received - already billed) by this much
     "auto_approve_limit": 100000.0,  # invoice total above this always needs a person
     "vendor_match": "medium",      # strict | medium | flexible

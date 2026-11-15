@@ -13,7 +13,7 @@ from core.rules import PRIORITY, REASON_LABEL, norm_invoice_number
 SEVERITY = {"PASS": 0, "NA": 0, "WARN": 1, "FAIL": 2}
 STATUS_FOR = {0: "APPROVED", 1: "FLAGGED", 2: "REJECTED"}
 ALLOC_FOR = {"APPROVED": "COMMITTED", "FLAGGED": "RESERVED", "REJECTED": "RELEASED"}
-LABEL = {"APPROVED": "Ready to Pay", "FLAGGED": "Needs Attention", "REJECTED": "Blocked"}
+LABEL = {"APPROVED": "Ready to Pay", "FLAGGED": "Needs Attention", "REJECTED": "Rejected"}
 
 
 def _order(f):
@@ -87,7 +87,7 @@ REVIEW_REASONS = {
 
 
 def allowed_actions(inv_row) -> set:
-    """Who can do what. A system 'Blocked' can never be approved by a click."""
+    """Who can do what. A system 'Rejected' can never be approved by a click."""
     if not inv_row or inv_row["run_state"] != "DONE":
         return set()
     s = inv_row["status"]

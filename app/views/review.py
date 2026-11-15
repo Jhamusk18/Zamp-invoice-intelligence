@@ -169,7 +169,7 @@ with right:
                 st.markdown(f"<div class='rv-note'><b>{'Approved' if note['action'] == 'REVIEWER_APPROVE' else 'Rejected'} by {html.escape(note['actor'])}</b> - "
                             f"{html.escape(note['details'].get('reason', ''))}</div>", unsafe_allow_html=True)
             else:
-                st.markdown("<div class='rv-note'>Blocked by the rules, so it can't be approved with a click.</div>", unsafe_allow_html=True)
+                st.markdown("<div class='rv-note'>Rejected by the rules, so it can't be approved with a click.</div>", unsafe_allow_html=True)
         else:
             label = ("What we found - edit it into your note (saved with your decision)" if found
                      else "Your note (saved with your decision)")
@@ -180,11 +180,11 @@ with right:
             # the three statuses, as in the design; the current status is pre-selected
             opts = ["FLAGGED", "APPROVED", "REJECTED"]
             choice = st.radio("Decision", opts, index=opts.index(s_) if s_ in opts else None,
-                              format_func=lambda x: {"FLAGGED": "Needs Attention", "APPROVED": "Ready to Pay", "REJECTED": "Blocked"}[x],
+                              format_func=lambda x: {"FLAGGED": "Needs Attention", "APPROVED": "Ready to Pay", "REJECTED": "Rejected"}[x],
                               horizontal=True, key=f"st_{iid}", label_visibility="collapsed")
             if s_ == "APPROVED":
                 st.markdown("<span class='z-muted'>Every check passed, so this invoice is already <b>Ready to Pay</b>. "
-                            "Choose <b>Blocked</b> only if you need to pull it back.</span>", unsafe_allow_html=True)
+                            "Choose <b>Rejected</b> only if you need to pull it back.</span>", unsafe_allow_html=True)
             elif choice == "FLAGGED":
                 st.markdown("<span class='z-muted'><b>Needs Attention</b> keeps the invoice on hold. Saving stores your note; "
                             "use the email below to ask the vendor to fix the issue.</span>", unsafe_allow_html=True)
@@ -207,7 +207,7 @@ with right:
         e_action = None
     if e_action is None:
         with st.container(key="card_email"):
-            st.markdown("<div class='rv-h'><svg viewBox='0 0 24 24' width='26' height='26' fill='none' stroke='#2F5BEA' stroke-width='1.9' stroke-linejoin='round'><rect x='3' y='5' width='18' height='14' rx='2.5'/><path d='M3.5 6.5l8.5 6.5 8.5-6.5'/></svg><span>Email to Vendor</span></div><div class='z-muted' style='margin-top:6px'>Pick <b>Ready to Pay</b> or <b>Blocked</b> above "
+            st.markdown("<div class='rv-h'><svg viewBox='0 0 24 24' width='26' height='26' fill='none' stroke='#2F5BEA' stroke-width='1.9' stroke-linejoin='round'><rect x='3' y='5' width='18' height='14' rx='2.5'/><path d='M3.5 6.5l8.5 6.5 8.5-6.5'/></svg><span>Email to Vendor</span></div><div class='z-muted' style='margin-top:6px'>Pick <b>Ready to Pay</b> or <b>Rejected</b> above "
                         "and a ready-to-send email for the vendor appears here.</div>", unsafe_allow_html=True)
     else:
         e = explain.reviewer_email(conn, iid, e_action, e_reason)
@@ -242,9 +242,9 @@ with right:
             changed = choice is not None and choice != s_
             allowed = (not changed) or {"APPROVED": "approve", "REJECTED": "reject"}.get(choice) in acts
             if not allowed:
-                hint = "A Ready to Pay invoice can't go back to Needs Attention - choose <b>Blocked</b> to pull it back."
+                hint = "A Ready to Pay invoice can't go back to Needs Attention - choose <b>Rejected</b> to pull it back."
             elif changed:
-                hint = f"Saving marks it <b>{ {'APPROVED': 'Ready to Pay', 'REJECTED': 'Blocked'}[choice] }</b> and stores your note in the audit trail."
+                hint = f"Saving marks it <b>{ {'APPROVED': 'Ready to Pay', 'REJECTED': 'Rejected'}[choice] }</b> and stores your note in the audit trail."
             else:
                 hint = "Status stays the same - saving stores your note in the audit trail."
             a = st.columns([2.2, 1, 1.3], vertical_alignment="center")

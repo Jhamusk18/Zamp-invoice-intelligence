@@ -37,7 +37,7 @@ with k[0]:
 with k[1]:
     ui.kpi("amber", "Needs Attention", s["FLAGGED"]["amount"], s["FLAGGED"]["count"], s["FLAGGED"]["amount"] / tot)
 with k[2]:
-    ui.kpi("red", "Blocked", s["REJECTED"]["amount"], s["REJECTED"]["count"], s["REJECTED"]["amount"] / tot)
+    ui.kpi("red", "Rejected", s["REJECTED"]["amount"], s["REJECTED"]["count"], s["REJECTED"]["amount"] / tot)
 st.write("")
 
 PAGE = 10
@@ -50,7 +50,7 @@ with st.container(key="card_table"):
     c = st.columns([1.7, 2.6, 2.0, 1.25, 0.6], vertical_alignment="center")
     c[0].markdown(f"<div class='z-tabletitle'>All invoices <span class='z-count'>{total} total</span></div>", unsafe_allow_html=True)
     c[1].text_input("Search", placeholder="🔍  Search invoice, vendor or PO", key="w_search", on_change=_set, args=("search",), label_visibility="collapsed")
-    c[2].multiselect("Status", ["Ready to Pay", "Needs Attention", "Blocked", "Processing / failed"], key="w_statuses", on_change=_set,
+    c[2].multiselect("Status", ["Ready to Pay", "Needs Attention", "Rejected", "Processing / failed"], key="w_statuses", on_change=_set,
                      args=("statuses",), placeholder="All statuses", label_visibility="collapsed")
     n_more = len(F["vendors"]) + (F["period"] != "All time") + (F["sort"] != DEFAULTS["sort"])
     with c[3].popover(f"Filters{f' ({n_more})' if n_more else ''}", use_container_width=True, icon=":material/tune:"):

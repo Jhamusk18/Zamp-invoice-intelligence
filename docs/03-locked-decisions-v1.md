@@ -15,10 +15,10 @@
 |---|---|---|
 | `APPROVED` | Ready to Pay | green |
 | `FLAGGED` | Needs Attention | amber |
-| `REJECTED` | Blocked | red |
+| `REJECTED` | Rejected | red |
 
 - Severity order: `REJECTED > FLAGGED > APPROVED`. The most severe finding wins; all reasons are listed.
-- The red status is labelled "Blocked" everywhere (landing, dashboard cards, filters, badges). Updated per user decision.
+- The red status is labelled "Rejected" everywhere (landing, dashboard cards, filters, badges). Updated per user decision.
 - `decided_by` = `system` or `reviewer`, so the screen can show "Ready to Pay · auto" vs "Ready to Pay · approved by reviewer".
 
 ## Two kinds of failure

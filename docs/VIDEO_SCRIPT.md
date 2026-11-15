@@ -1,7 +1,7 @@
 # Demo video script (final): under 5 minutes
 
 **Structure:** for each outcome, say in one sentence which cases lead to it, then show one example live.
-Ready to Pay → Needs Attention → Blocked (safe to dangerous).
+Ready to Pay → Needs Attention → Rejected (safe to dangerous).
 
 **Before you press record**
 - Open https://zamp-invoice-intelligence.streamlit.app and click through every page once, to wake it up.
@@ -21,7 +21,7 @@ Ready to Pay → Needs Attention → Blocked (safe to dangerous).
 >
 > Accounts payable teams lose money in three ways: paying the wrong amount, paying the same bill twice, and paying a fraudster who changed the bank account.
 >
-> My tool checks every invoice before it's paid. The AI reads the invoice, fixed rules decide, and a person approves the exceptions. Every invoice gets one of three answers: **Ready to Pay**, **Needs Attention**, or **Blocked**. I'll show one example of each."
+> My tool checks every invoice before it's paid. The AI reads the invoice, fixed rules decide, and a person approves the exceptions. Every invoice gets one of three answers: **Ready to Pay**, **Needs Attention**, or **Rejected**. I'll show one example of each."
 
 ## 2. ✅ Ready to Pay (0:35–1:35) · *Upload page → `D1_happy_path.pdf`*
 
@@ -54,25 +54,25 @@ Ready to Pay → Needs Attention → Blocked (safe to dangerous).
 > "On the review page, the PDF is on the left and our result is on the right. A person makes the final call, and they **must write a reason**."
 
 *Type in the note box:* **Called vendor on our number – they did not change their bank. Fraud attempt.**
-*Choose **Blocked**, then click **Save review**.*
+*Choose **Rejected**, then click **Save review**.*
 
 > "I called the vendor, and they never changed their bank, so I'll block it. The email below updates to match my decision. I can copy it or open it in Gmail. Nothing is sent automatically, and every action is saved in a history that can't be edited."
 
-## 4. ⛔ Blocked (3:20–4:20) · *Upload `X1_duplicate.pdf`*
+## 4. ⛔ Rejected (3:20–4:20) · *Upload `X1_duplicate.pdf`*
 
-> "**Blocked** is for invoices that should never be paid with one click: a duplicate, a blocked or unknown vendor, a fake lookalike vendor, a price far above the order, or a document that isn't an invoice at all, like a quotation."
+> "**Rejected** is for invoices that should never be paid with one click: a duplicate, a blocked or unknown vendor, a fake lookalike vendor, a price far above the order, or a document that isn't an invoice at all, like a quotation."
 
 *Drop X1 and click **Check invoice**.*
 
 > "This vendor already sent invoice **INV-0042**, and we paid it. Now the same bill has come back as just **'42'**, so a simple search wouldn't catch it."
 
-*Result appears: Blocked.*
+*Result appears: Rejected.*
 
 > "The tool cleans up the invoice number, sees it's the same bill, and **Blocks** it, so we don't pay twice. I also made sure normal monthly bills with the same amount are *not* flagged as duplicates."
 
 ## 5. History (4:20–4:50) · *History page*
 
-> "The History page shows every invoice we've checked: how many are ready, need attention or are blocked, and who decided, the rules or a person. The approval limits are settings the finance team controls, and the bank and duplicate rules are locked."
+> "The History page shows every invoice we've checked: how many are ready, need attention or are rejected, and who decided, the rules or a person. The approval limits are settings the finance team controls, and the bank and duplicate rules are locked."
 
 ## 6. Close (4:50–5:00)
 

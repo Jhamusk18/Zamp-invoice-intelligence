@@ -76,7 +76,7 @@ FLOW = """<svg viewBox='0 0 600 400' xmlns='http://www.w3.org/2000/svg' style='w
  <g font-family='Arial' font-size='12' font-weight='700'>
   <rect x='440' y='136' width='120' height='44' rx='10' fill='#E7F6EF'/><circle cx='458' cy='158' r='9' fill='#0F9F6E'/><path d='M453 158l4 4 7-8' stroke='#fff' stroke-width='2.4' fill='none'/><text x='474' y='162' fill='#0B7A55'>Ready to Pay</text>
   <rect x='440' y='190' width='120' height='44' rx='10' fill='#FDF1E3'/><circle cx='458' cy='212' r='9' fill='#E8963A'/><text x='458' y='216.5' fill='#fff' text-anchor='middle'>!</text><text x='474' y='216' fill='#A65B10'>Needs review</text>
-  <rect x='440' y='244' width='120' height='44' rx='10' fill='#FCEBEE'/><circle cx='458' cy='266' r='9' fill='#D63A52'/><path d='M454 262l8 8M462 262l-8 8' stroke='#fff' stroke-width='2.2'/><text x='474' y='270' fill='#B8263E'>Blocked</text>
+  <rect x='440' y='244' width='120' height='44' rx='10' fill='#FCEBEE'/><circle cx='458' cy='266' r='9' fill='#D63A52'/><path d='M454 262l8 8M462 262l-8 8' stroke='#fff' stroke-width='2.2'/><text x='474' y='270' fill='#B8263E'>Rejected</text>
  </g>
  <rect x='550' y='48' width='46' height='46' rx='12' fill='#2F5BEA'/><path d='M573 58l13 5v9c0 8-5.5 13.5-13 15.5-7.5-2-13-7.5-13-15.5v-9z' fill='none' stroke='#fff' stroke-width='2.4'/><path d='M567 72l4.5 4.5 8-8.5' stroke='#fff' stroke-width='2.4' fill='none'/>
 </svg>"""

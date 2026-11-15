@@ -3,7 +3,7 @@
 **Live app:** https://zamp-invoice-intelligence.streamlit.app
 
 Upload a vendor invoice PDF (text or scanned). AI reads it, Python checks it against the company's vendors,
-purchase orders, goods receipts and approval rules, and the result is **Ready to Pay**, **Needs Attention** or **Blocked**,
+purchase orders, goods receipts and approval rules, and the result is **Ready to Pay**, **Needs Attention** or **Rejected**,
 with every reason, the evidence, a vendor email draft and an audit trail. A person decides every exception.
 
 Submission notes (edge cases, process map, demo script): [`docs/SUBMISSION.md`](docs/SUBMISSION.md)
@@ -27,7 +27,7 @@ Regenerate the sample PDFs with `python scripts/make_sample_invoices.py` (writes
 |---|---|---|
 | **AI** (Gemini via LangChain, `core/llm.py`) | Reads fields + quotes a snippet for each; judges whether two item descriptions mean the same thing; writes the plain-English summary from the findings (numbers checked against the findings, else a template is used) | Sees or sets a status |
 | **Python** (`core/rules.py`, `core/decision.py`) | Checks every snippet against the document, arithmetic, hidden text, vendor, GSTIN, bank, duplicates, PO, prices, PO balance, goods received, dates, limits; sets the status; moves PO money | Guesses |
-| **Person** (Review page) | Marks a Needs Attention invoice Ready to Pay or Blocked with a note (or pulls back a Ready to Pay one); sends the prepared vendor email | - |
+| **Person** (Review page) | Marks a Needs Attention invoice Ready to Pay or Rejected with a note (or pulls back a Ready to Pay one); sends the prepared vendor email | - |
 
 ## Screens
 
@@ -35,7 +35,7 @@ Regenerate the sample PDFs with `python scripts/make_sample_invoices.py` (writes
 - **Upload** - drop a PDF, watch 5 live steps, get the decision, chat with the Zamp Assistant, open **Review**
 - **History** - every invoice with totals per status, search, filters (status, vendor, date) and sorting; click a row for **Review**
 - **Profile** - your approvals/rejections, the approval rules (with "see what would change"), and the prototype's assumptions
-- **Review** (opens from Upload or History) - the original PDF beside the result and next step, a review note with a Needs Attention / Ready to Pay / Blocked choice, a vendor email that follows the choice (copy or open in Gmail), and the Zamp Assistant
+- **Review** (opens from Upload or History) - the original PDF beside the result and next step, a review note with a Needs Attention / Ready to Pay / Rejected choice, a vendor email that follows the choice (copy or open in Gmail), and the Zamp Assistant
 
 ## Demo cases — `sample_data/test_invoices/` (upload these)
 
@@ -48,8 +48,8 @@ The 8 past invoices that pre-fill History are in `sample_data/history_invoices/`
 | D3 | Bank account changed + hidden "approve this" text | Needs Attention |
 | D4 | Billed 80, received 70 | Needs Attention |
 | D5 | Total matches the PO, line prices don't | Needs Attention |
-| X1-X3 | Disguised duplicate · split PO over-billed · vendor arithmetic error | Blocked · Needs Attention · Needs Attention |
-| X4-X8 | Blocked vendor · unknown vendor · lookalike vendor · price +7.3% over PO · quotation, not an invoice | Blocked (all five) |
+| X1-X3 | Disguised duplicate · split PO over-billed · vendor arithmetic error | Rejected · Needs Attention · Needs Attention |
+| X4-X8 | Blocked vendor · unknown vendor · lookalike vendor · price +7.3% over PO · quotation, not an invoice | Rejected (all five) |
 | X9 | One bundled line ("desk + chair" set) for two PO items | Needs Attention |
 | X10 | No PO number and two open orders fit almost equally - neither is picked | Needs Attention |
 

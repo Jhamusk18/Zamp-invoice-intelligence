@@ -4,7 +4,7 @@ evaluate() takes an extracted invoice + a read-only snapshot of company data and
 Business findings never stop evaluation - all checks always run. The decision is made afterwards
 (core/decision.py) from the full list.
 
-Result meaning:  PASS / NA  -> fine        WARN -> Needs Attention        FAIL -> Blocked
+Result meaning:  PASS / NA  -> fine        WARN -> Needs Attention        FAIL -> Rejected
 """
 import re
 from dataclasses import dataclass, field

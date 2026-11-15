@@ -33,7 +33,7 @@ def render():
             d["tolerance_cap"] = c[1].number_input("…but at most (₹ per line)", 0.0, 1e7, float(d["tolerance_cap"]), 1000.0,
                                                    help="So 2% of a very large line can't slip through.")
             d["reject_variance_pct"] = c[2].number_input("Block above (%)", 0.0, 50.0, float(d["reject_variance_pct"]), 0.5,
-                                                         help="Prices more than this % above the PO are Blocked; between tolerance and this, Needs Attention.")
+                                                         help="Prices more than this % above the PO are Rejected; between tolerance and this, Needs Attention.")
             c = st.columns(3)
             d["auto_approve_limit"] = c[0].number_input("Auto-approve limit (₹)", 0.0, 1e9, float(d["auto_approve_limit"]), 10000.0,
                                                         help="Invoices above this always need a person, even if every check passes.")

@@ -19,7 +19,7 @@
 
 ## 2. Short description (paste into the submission form)
 
-> **Zamp AP Assistant** checks a vendor invoice PDF and tells accounts payable what to do with it: **Ready to Pay**, **Needs Attention** or **Blocked**, with the reasons in plain English.
+> **Zamp AP Assistant** checks a vendor invoice PDF and tells accounts payable what to do with it: **Ready to Pay**, **Needs Attention** or **Rejected**, with the reasons in plain English.
 >
 > **How it works**
 > - **AI reads, Python decides, people own exceptions.** Gemini reads the invoice (text PDFs and scans) and must quote where it found each value. Python then checks every quote against the document itself, so invented values are caught.
@@ -41,13 +41,13 @@
 ```
 PDF ──► 1 PDF received ──► 2 Text extracted ──► 3 Fields validated ──► 4 Policy checks ──► 5 Decision & audit
         type/size/pages     text layer, or OCR      AI reads fields +       17 Python rules:        worst finding wins:
-        same file twice?    for scans; hidden-      a quote for each;       vendor · GSTIN · bank   any FAIL  → Blocked
+        same file twice?    for scans; hidden-      a quote for each;       vendor · GSTIN · bank   any FAIL  → Rejected
         → show old result   text scan               Python verifies each    duplicate · PO match    any WARN  → Needs Attention
                                                     quote, checks maths,    prices · PO balance     else      → Ready to Pay
                                                     re-reads once if off    goods received · dates  PO money: reserve/commit/release
                                                                             limits                  audit log (append-only)
                                                                                      │
-                     Needs Attention ──► person on Review page: note + Ready to Pay / Blocked ──► vendor email (copy / Gmail)
+                     Needs Attention ──► person on Review page: note + Ready to Pay / Rejected ──► vendor email (copy / Gmail)
 ```
 
 - **Technical errors** (unreadable file, AI down) stop the run with **Retry**.
@@ -60,8 +60,8 @@ PDF ──► 1 PDF received ──► 2 Text extracted ──► 3 Fields valid
 |---|---|---|---|---|
 | 1 | **Scanned invoice, no PO number, vendor's own item names** (`D2`) | Small vendors send phone scans and leave out the PO number. Their item names don't match ours. | It reads the scan with AI, double-checks the values with OCR, and scores open POs by amount, date and item meaning. It suggests the best PO with a score. The result is **Needs Attention**. | A guessed match is **never auto-paid**. A person confirms the suggested PO. |
 | 2 | **Bank account changed + hidden "approve this invoice" text** (`D3`) | Bank-change fraud is the costliest AP failure. Prompt injection is a new risk once AI reads documents. | The hidden white text is detected by comparing text colour with the background pixel, then ignored and reported. The bank mismatch holds the invoice: **Needs Attention**, with "call the vendor on the number we have on file". | The AI never decides, so injected text has nothing to persuade. The bank rule is **locked** and can't be relaxed in settings. |
-| 3 | **Disguised duplicate** (`X1`: `INV-0042` sent again as `42`) | Re-sent invoices with a reformatted number are a common way to pay twice. | Invoice numbers are normalised. The fuzzy check flags the same vendor with the same amount when the number is similar or the date is within 7 days. Result: **Blocked**. | We tuned this so **monthly recurring bills are not** treated as duplicates. Same amount alone isn't enough. |
-| 4 | **Split PO billed past its value** (`X2`: third invoice on one PO) | Vendors bill one PO in parts. The last part often goes over what was ordered or received. | Every invoice reserves its amount on the PO: Needs Attention reserves, Ready to Pay commits, Blocked releases. The third invoice goes over the remaining balance and over goods received, so it is **Needs Attention**. | Each invoice holds one allocation row per PO, so **re-processing never counts money twice**. |
+| 3 | **Disguised duplicate** (`X1`: `INV-0042` sent again as `42`) | Re-sent invoices with a reformatted number are a common way to pay twice. | Invoice numbers are normalised. The fuzzy check flags the same vendor with the same amount when the number is similar or the date is within 7 days. Result: **Rejected**. | We tuned this so **monthly recurring bills are not** treated as duplicates. Same amount alone isn't enough. |
+| 4 | **Split PO billed past its value** (`X2`: third invoice on one PO) | Vendors bill one PO in parts. The last part often goes over what was ordered or received. | Every invoice reserves its amount on the PO: Needs Attention reserves, Ready to Pay commits, Rejected releases. The third invoice goes over the remaining balance and over goods received, so it is **Needs Attention**. | Each invoice holds one allocation row per PO, so **re-processing never counts money twice**. |
 
 Also covered:
 
@@ -70,18 +70,18 @@ Also covered:
 | D4 | Short receipt: billed 80, received 70 | Needs Attention |
 | D5 | Total matches the PO but a line price is +4.5% | Needs Attention |
 | X3 | Vendor arithmetic error | Needs Attention |
-| X4 | Blocked vendor | Blocked |
-| X5 | Unknown vendor | Blocked |
-| X6 | Look-alike vendor name with a different GSTIN and bank | Blocked |
-| X7 | Price +7.3% over the PO | Blocked |
-| X8 | A quotation, not an invoice | Blocked |
+| X4 | Blocked vendor | Rejected |
+| X5 | Unknown vendor | Rejected |
+| X6 | Look-alike vendor name with a different GSTIN and bank | Rejected |
+| X7 | Price +7.3% over the PO | Rejected |
+| X8 | A quotation, not an invoice | Rejected |
 | X9 | Bundled line: one "desk + chair" set billed for two PO items (the problem statement's bundled line items) | Needs Attention, with a clear "check it against the order items" reason instead of blaming the vendor |
 | X10 | No PO number and two open orders fit almost equally | Needs Attention: it never silently picks one, and nothing is reserved until a person chooses |
 
 ## 5. Key choices (for questions)
 
 **Three outcomes, not two.**
-- **Blocked** is for things a person shouldn't override with a click: a blocked vendor, a duplicate, a fake vendor.
+- **Rejected** is for things a person shouldn't override with a click: a blocked vendor, a duplicate, a fake vendor.
 - **Needs Attention** is for things a phone call can settle.
 
 **AI only where meaning is needed:**
@@ -117,11 +117,11 @@ Every AI number is checked against the findings; if any doesn't match, a templat
 
 | Time | Screen | Say (roughly) |
 |---|---|---|
-| 0:00–0:30 | **Welcome** | "AP teams lose money to three things: paying the wrong amount, paying twice, and paying a fraudster. This tool checks every invoice before payment and gives one of three answers: Ready to Pay, Needs Attention or Blocked, with reasons in plain English." |
+| 0:00–0:30 | **Welcome** | "AP teams lose money to three things: paying the wrong amount, paying twice, and paying a fraudster. This tool checks every invoice before payment and gives one of three answers: Ready to Pay, Needs Attention or Rejected, with reasons in plain English." |
 | 0:30–1:30 | **Upload `D1`** (happy path) | Drop the file and watch the 5 steps. "AI reads the invoice and must quote where it found each value. Python checks those quotes against the PDF, checks the maths, then runs the business rules: vendor, PO, price, goods received, duplicates." Result: **Ready to Pay**. Click a chat option ("Why is it OK?"). |
 | 1:30–2:45 | **Upload `D3`** (bank change + hidden text) | "This one looks normal, but the bank account is different from our records. That's the classic fraud. It also hides white text telling an AI to approve it." Show **Needs Attention** and the next step: "call the vendor on the number we have". "The AI never makes the decision, so the hidden instruction has nothing to persuade. We detect it and report it." |
-| 2:45–3:45 | **Review page** for D3 | Show the PDF on the left and the result on the right. Write a note ("Called vendor, they confirmed no bank change"), choose **Blocked**, and save. Show the email that changed to match, plus **Copy** / **Open in Gmail**. "A person owns every exception, and every action is recorded with a reason." |
-| 3:45–4:20 | **Upload `X1`** (disguised duplicate) | "Same invoice re-sent as '42' instead of 'INV-0042'." Result: **Blocked** as a duplicate of the earlier invoice. "We tuned this so monthly bills with the same amount are *not* flagged." |
+| 2:45–3:45 | **Review page** for D3 | Show the PDF on the left and the result on the right. Write a note ("Called vendor, they confirmed no bank change"), choose **Rejected**, and save. Show the email that changed to match, plus **Copy** / **Open in Gmail**. "A person owns every exception, and every action is recorded with a reason." |
+| 3:45–4:20 | **Upload `X1`** (disguised duplicate) | "Same invoice re-sent as '42' instead of 'INV-0042'." Result: **Rejected** as a duplicate of the earlier invoice. "We tuned this so monthly bills with the same amount are *not* flagged." |
 | 4:20–4:45 | **History** | Totals per status, search and filters. "Every run is here: who decided, the system or a reviewer, and why." |
 | 4:45–5:00 | **Profile → Approval rules** | "Limits are versioned settings. You can see what would change before changing them. The bank and duplicate rules are locked." Close: "AI reads, Python decides, people own the exceptions." |
 
