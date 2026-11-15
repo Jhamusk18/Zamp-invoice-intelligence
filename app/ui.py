@@ -117,15 +117,19 @@ div[data-testid="stVerticalBlockBorderWrapper"] { border-radius: 14px; }
 .z-teaser-q { border:1px dashed #CBD6EA; border-radius: 12px; padding: 10px 12px; margin: 6px 0; color:#9AA8C0; font-size:.9rem; }
 div[data-testid="stChatMessage"] { background: #F7FAFF; border: 1px solid #E3EBFA; border-radius: 12px; }
 
-/* upload drop zone */
-[data-testid="stFileUploaderDropzone"] { background: #fff; border: 2px dashed #9DB8F5; border-radius: 18px; padding: 56px 30px; min-height: 230px;
-  display:flex; flex-direction: column; align-items:center; justify-content:center; gap: 14px; text-align:center; }
-[data-testid="stFileUploaderDropzone"]::before { content: "⬆"; font-size: 2rem; color: #2563EB; background: #EAF1FF; width: 64px; height: 64px;
-  border-radius: 18px; display:flex; align-items:center; justify-content:center; }
-[data-testid="stFileUploaderDropzoneInstructions"] { align-items:center; text-align:center; }
-[data-testid="stFileUploaderDropzone"] button { background: #2563EB; color: #fff; border: 0; padding: 8px 22px; border-radius: 10px; font-weight: 600; }
+/* upload drop zone: soft blue fill, dashed border, document icon, raised blue button */
+[data-testid="stFileUploaderDropzone"] { background: linear-gradient(180deg, #EEF4FF 0%, #E3EDFD 100%); border: 2px dashed #9FB3D1; border-radius: 16px;
+  padding: 56px 30px; min-height: 300px; display:flex; flex-direction: column; align-items:center; justify-content:center; gap: 22px; text-align:center;
+  box-shadow: 0 8px 24px rgba(37,99,235,.08); transition: all .15s; }
+[data-testid="stFileUploaderDropzone"]:hover { border-color: #2563EB; background: linear-gradient(180deg, #E8F0FF 0%, #DCE8FD 100%); }
+[data-testid="stFileUploaderDropzone"]::before { content: ""; width: 66px; height: 80px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 66 80'><path d='M8 3h34l21 21v47a6 6 0 0 1-6 6H8a6 6 0 0 1-6-6V9a6 6 0 0 1 6-6z' fill='%23DCE7FB' stroke='%234F7BD9' stroke-width='3' stroke-linejoin='round'/><path d='M42 3v15a6 6 0 0 0 6 6h15' fill='%23C3D5F6' stroke='%234F7BD9' stroke-width='3' stroke-linejoin='round'/><path d='M33 60V36M22 46l11-11 11 11' fill='none' stroke='%234F7BD9' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/></svg>") no-repeat center / contain; }
+[data-testid="stFileUploaderDropzoneInstructions"] { display: none; }
+[data-testid="stFileUploaderDropzone"] button { background: linear-gradient(180deg, #2F6BF0, #1D4ED8); color: #fff; border: 0; padding: 10px 26px;
+  border-radius: 10px; font-weight: 650; font-size: 1rem; box-shadow: 0 6px 14px rgba(29,78,216,.35); }
+[data-testid="stFileUploaderDropzone"] button:hover { background: linear-gradient(180deg, #3B76F5, #2563EB); color: #fff; transform: translateY(-1px); }
+[data-testid="stFileUploaderDropzone"] button p, [data-testid="stFileUploaderDropzone"] button span { color: #fff !important; }
 [data-testid="stFileUploader"] > label p { font-size: 1.05rem; font-weight: 650; color: #0F1B33; }
-[data-testid="stFileUploaderDropzone"]:hover { background: var(--sky); border-color: var(--blue); }
 .stButton > button[kind="primary"] { background: var(--blue); border: 0; }
 .stButton > button[kind="primary"]:hover { background: #1D4ED8; }
 
