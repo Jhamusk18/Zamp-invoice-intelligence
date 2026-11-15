@@ -109,6 +109,16 @@ def reviewer_email(conn, invoice_id, action: str, reason: str):
     ref = f"invoice {inv['invoice_number']} dated {inv['invoice_date']} for {inr(inv['total'])}"
     po = f" ({inv['po_number']})" if inv["po_number"] and inv["po_match_type"] == "EXPLICIT" else ""
     codes = json.loads(inv["reason_codes"] or "[]")
+    if action == "hold":
+        codes_v = [c for c in codes if c in VENDOR_FACING and c in ASK]
+        subject = f"Invoice {inv['invoice_number']} - " + ("PO confirmation required" if "PO_INFERRED" in codes or "NO_PO" in codes else "please help us resolve")
+        lines = [f"Dear {name} team,", f"We're processing your {ref}{po}."]
+        if codes_v:
+            lines.append("\n".join(f"- {a}" for a in dict.fromkeys(ASK[c] for c in codes_v)))
+        else:
+            lines.append("We need a little more information before we can approve it, and will be in touch shortly.")
+        lines.append("Please reply to this email.")
+        return {"to": to, "subject": subject, "body": "\n\n".join(lines + [SIGN])}
     if action == "approve":
         subject = f"Invoice {inv['invoice_number']} approved for payment"
         lines = [f"Dear {name} team,", f"Your {ref}{po} has been approved for payment as per our agreed terms."]

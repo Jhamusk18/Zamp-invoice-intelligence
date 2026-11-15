@@ -30,55 +30,10 @@ if iid not in order:
 pos = order.index(iid) if iid in order else 0
 name = inv["invoice_number"] or inv["filename"]
 
-if st.button(f"History  /  {name}", type="tertiary", icon=":material/arrow_back:"):
-    st.switch_page(st.session_state.pages["history"])
+fs = q.findings(conn, iid)
+bad = sorted([f for f in fs if f["result"] in ("WARN", "FAIL")], key=lambda f: f["result"] != "FAIL")
 src = "sample history (values known, no AI)" if inv["source"] == "seed" else "uploaded"
-h = st.columns([4.6, 1.75, 0.38, 0.62, 0.38], vertical_alignment="center", gap="small")
-h[0].markdown(f"<h1 style='margin:0'>{html.escape(name)}</h1>"
-              f"<div class='z-sub' style='margin:4px 0 0'><b style='color:#0F172A'>{html.escape(inv['vendor_name'] or 'Unknown vendor')}</b> · "
-              f"{inr(inv['total'], decimals=0) if inv['total'] is not None else '—'} · invoice date {inv['invoice_date'] or '—'}"
-              f"<span class='z-muted'> &nbsp;·&nbsp; {src}{' · policy v' + str(inv['policy_version']) if inv['policy_version'] else ''}</span></div>",
-              unsafe_allow_html=True)
-with h[1].popover("Ask about this invoice", icon=":material/chat:", use_container_width=True):
-    helper_panel.render(conn, iid, "rv", height=300)
-if h[2].button("‹", disabled=pos == 0, help="Previous invoice", use_container_width=True):
-    st.switch_page(st.session_state.pages["review"], query_params={"id": str(order[pos - 1])})
-h[3].markdown(f"<div style='text-align:center;white-space:nowrap' class='z-muted'>{pos + 1} of {len(order)}</div>", unsafe_allow_html=True)
-if h[4].button("›", disabled=pos >= len(order) - 1, help="Next invoice", use_container_width=True):
-    st.switch_page(st.session_state.pages["review"], query_params={"id": str(order[pos + 1])})
-st.write("")
 
-left, right = st.columns([1, 1.15], gap="large")
-
-# ---------------- left (sticky): the original document
-with left:
-    with st.container(key="pdfpane"):
-        data = (db.ROOT / inv["file_path"]).read_bytes()
-        doc = pymupdf.open(stream=data, filetype="pdf")
-        z = st.session_state.setdefault(f"zoom_{iid}", 1.0)
-        pg = st.session_state.setdefault(f"page_{iid}", 0)
-        png = doc[pg].get_pixmap(dpi=int(110 * z)).tobytes("png")
-        with st.container(height=800, border=True):
-            st.image(png, use_container_width=z <= 1.0)
-        tb = st.columns([0.7, 1.1, 0.7, 0.7, 0.7, 2.3], vertical_alignment="center")
-        if tb[0].button("‹", key="pp", disabled=pg == 0, help="Previous page"):
-            st.session_state[f"page_{iid}"] -= 1
-            st.rerun()
-        tb[1].markdown(f"<div style='text-align:center' class='z-muted'>page {pg + 1}/{doc.page_count}</div>", unsafe_allow_html=True)
-        if tb[2].button("›", key="np", disabled=pg >= doc.page_count - 1, help="Next page"):
-            st.session_state[f"page_{iid}"] += 1
-            st.rerun()
-        if tb[3].button("−", key="zo", disabled=z <= 0.6, help="Zoom out"):
-            st.session_state[f"zoom_{iid}"] = round(z - 0.25, 2)
-            st.rerun()
-        if tb[4].button("+", key="zi", disabled=z >= 2.5, help="Zoom in"):
-            st.session_state[f"zoom_{iid}"] = round(z + 0.25, 2)
-            st.rerun()
-        tb[5].download_button("Download", data, file_name=inv["filename"] or "invoice.pdf", mime="application/pdf",
-                              icon=":material/download:", use_container_width=True)
-        st.markdown(f"<div class='z-muted'>Zoom {int(z * 100)}% · {'original scan' if inv['is_scanned'] else 'original PDF'}</div>", unsafe_allow_html=True)
-
-# ---------------- right: result → your decision → tabs
 GROUP = {"Document": "Document", "Duplicate": "Document", "Vendor": "Vendor & bank", "Purchase order": "Order & goods", "Policy": "Policy"}
 NOT_SHOWN = "not shown on the invoice"
 
@@ -178,86 +133,161 @@ def check_html(f, with_cmp=True):
             f"<div class='ms'>{html.escape(f['message'])}</div>" + (f"<div class='cmp'>{html.escape(cmp)}</div>" if cmp else "") + "</div></div>")
 
 
-def show_email(action, reason, folded=False):
-    """Ready-to-copy vendor email for this decision (fixed template, no AI). Nothing is sent.
-    folded=True (decision already made): a compact bar you click open."""
-    from contextlib import nullcontext
-    from urllib.parse import quote
-    e = explain.reviewer_email(conn, iid, action, reason)
-    outer = st.expander(f"✉️  Email to the vendor  ·  {e['subject']}  ·  ready to copy", expanded=False) if folded else nullcontext()
-    with outer, st.container(key=f"mail_{action}"):
-        st.markdown(f"<div class='z-mailhead'><span>✉️</span><b>Email to the vendor</b><span class='z-draft'>Draft · not sent</span></div>"
-                    f"<div class='z-mailfield'><span>To</span><div>{html.escape(e['to'])} <i class='z-muted'>(address on file)</i></div></div>"
-                    f"<div class='z-mailfield'><span>Subject</span><div><b>{html.escape(e['subject'])}</b></div></div>", unsafe_allow_html=True)
-        st.code(e["body"], language=None, wrap_lines=True)
-        c = st.columns([1.7, 3], vertical_alignment="center")
-        if "@" in e["to"]:
-            c[0].link_button("Open in email app", f"mailto:{e['to']}?subject={quote(e['subject'])}&body={quote(e['body'])}",
-                             icon=":material/forward_to_inbox:", use_container_width=True)
-        c[1].markdown("<span class='z-muted'>Copy with the icon on the text, or open it in your email app. Nothing is sent from here.</span>",
-                      unsafe_allow_html=True)
+
+# ================================================================ header: back · title · facts | Ask · ‹ n of N ›
+h = st.columns([0.42, 5.2, 1.75, 0.38, 0.62, 0.38], vertical_alignment="center", gap="small")
+if h[0].button("", icon=":material/arrow_back:", key="back", help="Back to History"):
+    st.switch_page(st.session_state.pages["history"])
+h[1].markdown(f"<div class='rv-title'>Review invoice</div><div class='z-sub' style='margin:2px 0 0'><b style='color:#0F172A'>{html.escape(name)}</b> · "
+              f"{html.escape(inv['vendor_name'] or 'Unknown vendor')} · {inr(inv['total'], decimals=0) if inv['total'] is not None else '—'} · "
+              f"invoice date {inv['invoice_date'] or '—'}<span class='z-muted'> &nbsp;·&nbsp; {src}"
+              f"{' · policy v' + str(inv['policy_version']) if inv['policy_version'] else ''}</span></div>", unsafe_allow_html=True)
+with h[2].popover("Ask about this invoice", icon=":material/chat:", use_container_width=True):
+    helper_panel.render(conn, iid, "rv", height=300)
+if h[3].button("‹", disabled=pos == 0, help="Previous invoice", use_container_width=True):
+    st.switch_page(st.session_state.pages["review"], query_params={"id": str(order[pos - 1])})
+h[4].markdown(f"<div style='text-align:center;white-space:nowrap' class='z-muted'>{pos + 1} of {len(order)}</div>", unsafe_allow_html=True)
+if h[5].button("›", disabled=pos >= len(order) - 1, help="Next invoice", use_container_width=True):
+    st.switch_page(st.session_state.pages["review"], query_params={"id": str(order[pos + 1])})
+st.write("")
+
+left, right = st.columns([1, 1.05], gap="large")
+
+# ================================================================ left: the document in one card
+with left:
+    with st.container(key="pdfpane"):
+        data = (db.ROOT / inv["file_path"]).read_bytes()
+        doc = pymupdf.open(stream=data, filetype="pdf")
+        z = st.session_state.setdefault(f"zoom_{iid}", 1.0)
+        pg = st.session_state.setdefault(f"page_{iid}", 0)
+        bar = st.columns([4.2, 0.5, 0.5, 0.5, 0.5, 0.5], vertical_alignment="center", gap="small")
+        bar[0].markdown(f"<div class='rv-file'><span class='doc'>{ui.PDF_SVG}</span><div style='min-width:0'><b>{html.escape(inv['filename'] or name)}</b>"
+                        f"<div class='z-muted'>{'scan' if inv['is_scanned'] else 'PDF'} · page {pg + 1} of {doc.page_count} · {int(z * 100)}%</div></div></div>",
+                        unsafe_allow_html=True)
+        if bar[1].button("", icon=":material/chevron_left:", key="pp", disabled=pg == 0, help="Previous page"):
+            st.session_state[f"page_{iid}"] -= 1
+            st.rerun()
+        if bar[2].button("", icon=":material/chevron_right:", key="np", disabled=pg >= doc.page_count - 1, help="Next page"):
+            st.session_state[f"page_{iid}"] += 1
+            st.rerun()
+        if bar[3].button("", icon=":material/zoom_out:", key="zo", disabled=z <= 0.6, help="Zoom out"):
+            st.session_state[f"zoom_{iid}"] = round(z - 0.25, 2)
+            st.rerun()
+        if bar[4].button("", icon=":material/zoom_in:", key="zi", disabled=z >= 2.5, help="Zoom in"):
+            st.session_state[f"zoom_{iid}"] = round(z + 0.25, 2)
+            st.rerun()
+        bar[5].download_button("", data, file_name=inv["filename"] or "invoice.pdf", mime="application/pdf", icon=":material/download:",
+                               key="dl", help="Download the original")
+        png = doc[pg].get_pixmap(dpi=int(110 * z)).tobytes("png")
+        with st.container(height=780, border=False, key="pdfview"):
+            st.image(png, use_container_width=z <= 1.0)
+
+# ================================================================ right: status · review · email · actions
+STATUS_ICON = {"APPROVED": "✓", "FLAGGED": "!", "REJECTED": "✕"}
+
+
+def copy_button(text, key):
+    """Copies text to the clipboard (falls back to execCommand inside the component frame)."""
+    import streamlit.components.v1 as components
+    components.html(f"""<style>html,body{{margin:0;padding:0;overflow:hidden}}</style><button id='b' style="width:100%;height:44px;margin:0;border-radius:10px;border:1px solid #D6E1FD;background:#EEF3FF;color:#2449C9;
+      font:600 15px 'Source Sans Pro',sans-serif;cursor:pointer">⧉ Copy draft</button><script>
+      const t = {json.dumps(text)}; const b = document.getElementById('b');
+      b.onclick = async () => {{ try {{ await navigator.clipboard.writeText(t); }} catch (e) {{
+        const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); }}
+        b.innerText = '✓ Copied'; setTimeout(() => b.innerText = '⧉ Copy draft', 1800); }};</script>""", height=46)
+
 
 with right:
-    ui.verdict(inv, helper.next_step(conn, iid))
     if inv["run_state"] != "DONE":
+        ui.verdict(inv)
         st.stop()
+    note = q.reviewer_note(conn, iid)
+    acts = decision.allowed_actions(inv)
+    s_ = inv["status"]
+    sub = (f"Decided by {note['actor']} on {datetime.fromtimestamp(note['ts']):%d %b %Y, %H:%M}." if note and inv["decided_by"] == "reviewer"
+           else helper.next_step(conn, iid) or "")
+    st.markdown(f"<div class='rv-banner {s_}'><div class='ic'>{STATUS_ICON[s_]}</div><div><div class='t'>{LABEL[s_]}</div>"
+                f"<div class='s'>{html.escape(sub)}</div></div><div class='amt'>{inr(inv['total'], decimals=0)}</div></div>", unsafe_allow_html=True)
 
-    # ---- your decision, right under the result
-    with st.container(key="card_decision"):
-        st.markdown("**Your decision**")
-        acts = decision.allowed_actions(inv)
+    # ---- Review
+    found = [short_text(f) for f in bad]
+    with st.container(key="card_review"):
+        st.markdown("<div class='rv-h'>✎ Review</div>", unsafe_allow_html=True)
+        choice, reason = None, None
         if not acts:
-            if inv["status"] == "REJECTED" and inv["decided_by"] == "system":
-                st.markdown("<span class='z-muted'>No action available: the rules blocked this invoice (for example a duplicate or a blocked vendor), "
-                            "so it can't be approved with a click.</span>", unsafe_allow_html=True)
+            st.markdown("<div class='rv-found'>" + ("".join(f"<div>{'⛔' if f['result'] == 'FAIL' else '⚠️'} {html.escape(short_text(f))}</div>" for f in bad)
+                        if bad else "<div>✅ Every check passed.</div>") + "</div>", unsafe_allow_html=True)
+            if note and inv["decided_by"] == "reviewer":
+                st.markdown(f"<div class='rv-note'><b>{'Approved' if note['action'] == 'REVIEWER_APPROVE' else 'Rejected'} by {html.escape(note['actor'])}</b> - "
+                            f"{html.escape(note['details'].get('reason', ''))}</div>", unsafe_allow_html=True)
             else:
-                note = q.reviewer_note(conn, iid)
-                if note:
-                    ok = note["action"] == "REVIEWER_APPROVE"
-                    st.markdown(f"<div class='z-decided {'APPROVED' if ok else 'REJECTED'}'>"
-                                f"<div class='top'><span class='z-pill {'APPROVED' if ok else 'REJECTED'}'><span class='dot'></span>{'Approved' if ok else 'Rejected'} by reviewer</span>"
-                                f"<span class='z-muted'>{html.escape(note['actor'])} · {datetime.fromtimestamp(note['ts']):%d %b %Y, %H:%M}</span></div>"
-                                f"<div class='why'>Reason: <b>{html.escape(note['details'].get('reason', ''))}</b></div></div>", unsafe_allow_html=True)
-                else:
-                    st.markdown("<span class='z-muted'>Already decided. See the Audit Trail.</span>", unsafe_allow_html=True)
-                if note:
-                    show_email("approve" if note["action"] == "REVIEWER_APPROVE" else "reject", note["details"].get("reason", ""), folded=True)
+                st.markdown("<div class='rv-note'>Blocked by the rules, so it can't be approved with a click.</div>", unsafe_allow_html=True)
         else:
-            labels = {"approve": "✅ Approve", "reject": "⛔ Reject"}
-            act = st.segmented_control("Action", [a for a in ("approve", "reject") if a in acts], format_func=lambda a: labels[a],
-                                       key=f"act_{iid}", label_visibility="collapsed")
-            if "approve" not in acts:
-                st.markdown("<span class='z-muted'>Approve isn't offered because this invoice is already <b>Ready to Pay</b>. "
-                            "You can still pull it back with Reject.</span>", unsafe_allow_html=True)
-            reason = None
-            if act:
-                if act == "approve" and "BANK_CHANGED" in (inv["reason_codes"] or ""):
-                    st.warning("The bank account differs from our records. Only approve after calling the vendor on the number **on file**.", icon="📞")
-                OTHER = "Other (type below)"
-                pick = st.selectbox("Reason", decision.REVIEW_REASONS[act] + [OTHER], index=None, placeholder="Choose a reason…", key=f"why_{iid}_{act}")
-                note_txt = st.text_input("Reason (required)" if pick == OTHER else "Add a note (optional)", key=f"note_{iid}_{act}",
-                                         placeholder="e.g. confirmed with Ravi in procurement")
-                if pick == OTHER:
-                    reason = note_txt.strip() or None
-                elif pick:
-                    reason = pick + (f" - {note_txt.strip()}" if note_txt.strip() else "")
-                eff = "**Ready to Pay** (PO amount committed)" if act == "approve" else "**Blocked** (PO amount released)"
-                st.caption(f"On submit, this invoice becomes {eff} and your reason is saved in the audit trail.")
-                if reason:
-                    show_email(act, reason)
-            if st.button("Submit decision", type="primary", icon=":material/send:", disabled=not (act and reason), key=f"submit_{iid}"):
+            opts = [s_] + [t for a, t in (("approve", "APPROVED"), ("reject", "REJECTED")) if a in acts and t != s_]
+            st.markdown("<div class='z-muted' style='margin:6px 0 2px'>What we found - edit it into your note (saved with your decision)</div>", unsafe_allow_html=True)
+            reason = st.text_area("Your note", value=" ".join(found) if found else "", height=90, key=f"txt_{iid}", label_visibility="collapsed",
+                                  placeholder="Why are you approving or blocking this invoice?").strip()
+            choice = st.radio("Status", opts, format_func=lambda x: {"FLAGGED": "Needs Attention", "APPROVED": "Ready to Pay", "REJECTED": "Blocked"}[x],
+                              horizontal=True, key=f"st_{iid}", label_visibility="collapsed")
+            if choice == "APPROVED" and "BANK_CHANGED" in (inv["reason_codes"] or "") and s_ != "APPROVED":
+                st.warning("The bank account differs from our records. Only mark Ready to Pay after calling the vendor on the number **on file**.", icon="📞")
+
+    # ---- Email to vendor (template, follows the chosen status; nothing is sent)
+    if note and inv["decided_by"] == "reviewer":
+        e_action, e_reason = ("approve" if note["action"] == "REVIEWER_APPROVE" else "reject"), note["details"].get("reason", "")
+    elif not acts:
+        e_action, e_reason = "reject", inv["primary_reason"] or ""
+    else:
+        e_action = {"APPROVED": "approve", "REJECTED": "reject", "FLAGGED": "hold"}[choice]
+        e_reason = reason or inv["primary_reason"] or ""
+    e = explain.reviewer_email(conn, iid, e_action, e_reason)
+    with st.container(key="card_email"):
+        hh = st.columns([3, 1.2], vertical_alignment="center")
+        hh[0].markdown("<div class='rv-h'>✉ Email to Vendor <span class='z-draft2'>Draft · not sent</span></div>", unsafe_allow_html=True)
+        ek = f"edit_{iid}"
+        if hh[1].button("Done" if st.session_state.get(ek) else "Edit draft", icon=":material/edit:", key=f"ebtn_{iid}", use_container_width=True):
+            st.session_state[ek] = not st.session_state.get(ek)
+            st.rerun()
+        st.markdown(f"<div class='rv-mail'><div class='f'><span>To</span>{html.escape(e['to'])}</div>"
+                    f"<div class='f'><span>Subject</span><b>{html.escape(e['subject'])}</b></div></div>", unsafe_allow_html=True)
+        if st.session_state.get(ek):
+            body = st.text_area("Email text", value=e["body"], height=260, key=f"body_{iid}_{e_action}", label_visibility="collapsed")
+        else:
+            body = st.session_state.get(f"body_{iid}_{e_action}", e["body"])
+            st.markdown("<div class='rv-body'>" + html.escape(body).replace("\n", "<br>") + "</div>", unsafe_allow_html=True)
+        from urllib.parse import quote
+        bb = st.columns([1, 1.25], gap="small")
+        with bb[0]:
+            copy_button(f"To: {e['to']}\nSubject: {e['subject']}\n\n{body}", f"cp_{iid}")
+        if "@" in e["to"]:
+            bb[1].link_button("Open in email app", f"mailto:{e['to']}?subject={quote(e['subject'])}&body={quote(body)}", type="primary",
+                              icon=":material/send:", use_container_width=True)
+
+    # ---- Actions
+    if acts:
+        with st.container(key="card_actions"):
+            changed = choice != s_
+            a = st.columns([2.2, 1, 1.3], vertical_alignment="center")
+            a[0].markdown("<span class='z-muted'>" + ("Saving records your decision and note in the audit trail." if changed else
+                          "Pick <b>Ready to Pay</b> or <b>Blocked</b> to record a decision. You can still copy the email.") + "</span>", unsafe_allow_html=True)
+            if a[1].button("Cancel", use_container_width=True):
+                st.switch_page(st.session_state.pages["history"])
+            if a[2].button("Save review", type="primary", icon=":material/check:", use_container_width=True, disabled=not (changed and reason)):
                 try:
-                    new = decision.reviewer_action(conn, iid, act, reason)
+                    new = decision.reviewer_action(conn, iid, "approve" if choice == "APPROVED" else "reject", reason)
                     for k in list(st.session_state.keys()):
-                        if k.startswith((f"act_{iid}", f"why_{iid}", f"note_{iid}")):
+                        if isinstance(k, str) and k.startswith((f"txt_{iid}", f"st_{iid}", f"edit_{iid}", f"body_{iid}")):
                             del st.session_state[k]
                     st.toast(f"Saved: {LABEL[new]}. Recorded in the audit trail.", icon="✅")
                     st.rerun()
-                except (ValueError, PermissionError) as e:
-                    st.error(str(e))
+                except (ValueError, PermissionError) as err:
+                    st.error(str(err))
 
-    fs = q.findings(conn, iid)
-    tabs = st.tabs(["Checks", "Details & Matches", "Audit Trail"])
+# ================================================================ everything else, folded below
+st.write("")
+st.markdown("<div class='rv-more'>More about this invoice</div>", unsafe_allow_html=True)
+with st.container():
+    tabs = st.tabs(["All checks", "Details & Matches", "Audit Trail"])
 
     # ---- Checks, for a non-technical reader: one short sentence per problem; everything else folded away
     with tabs[0]:

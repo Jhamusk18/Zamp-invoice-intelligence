@@ -181,6 +181,39 @@ div[data-testid="stChatMessage"] { background: #F7FAFF; border: 1px solid #E3EBF
   font-family: "Source Sans Pro", "Segoe UI", sans-serif !important; font-size: .95rem !important; line-height: 1.6 !important; color: var(--txt) !important; white-space: pre-wrap !important; }
 [class*="st-key-mail_"] [data-testid="stHorizontalBlock"] { padding: 10px 16px 14px; border-top: 1px solid #EDF1F8; background: #F8FAFE; }
 
+/* review page, simple version */
+.rv-title { font-size: 1.9rem; font-weight: 800; color: var(--txt); letter-spacing: -.02em; line-height: 1.1; }
+.st-key-back button { border-radius: 50% !important; width: 46px; height: 46px; background: #EEF3FF !important; border: 0 !important; color: #2F5BEA !important; }
+.st-key-pdfpane { background:#fff; border:1px solid var(--line); border-radius: 18px; padding: 14px 14px 16px; box-shadow: 0 10px 30px rgba(15,23,42,.06); }
+.st-key-pdfview { background: #F1F4F9; border-radius: 12px; padding: 16px; }
+.st-key-pdfpane .stButton > button, .st-key-pdfpane .stDownloadButton > button { border-radius: 10px; min-height: 38px; padding: 0 10px; }
+.rv-file { display:flex; align-items:center; gap: 10px; min-width: 0; } .rv-file b { color: var(--txt); display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rv-file .doc { width: 34px; height: 38px; border-radius: 8px; background: #FCEBEE; display:flex; align-items:center; justify-content:center; flex:none; }
+.rv-file .doc svg { width: 20px; height: 22px; }
+.rv-banner { display:flex; align-items:center; gap: 16px; border-radius: 16px; padding: 18px 20px; border: 1px solid transparent; margin-bottom: 14px; }
+.rv-banner .ic { width: 46px; height: 46px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-weight: 800; font-size: 1.3rem; color:#fff; flex:none; }
+.rv-banner .t { font-size: 1.45rem; font-weight: 800; } .rv-banner .s { color: #334155; font-size: .95rem; margin-top: 2px; }
+.rv-banner .amt { margin-left: auto; font-size: 1.5rem; font-weight: 800; color: var(--txt); white-space: nowrap; }
+.rv-banner.FLAGGED { background: linear-gradient(90deg, #FFF6EA, #FFFBF5); border-color: #F6D9AE; } .rv-banner.FLAGGED .ic { background: #E8963A; } .rv-banner.FLAGGED .t { color: #A65B10; }
+.rv-banner.APPROVED { background: linear-gradient(90deg, #EAF8F1, #F6FCF9); border-color: #BDE6D0; } .rv-banner.APPROVED .ic { background: #0F9F6E; } .rv-banner.APPROVED .t { color: #0B7A55; }
+.rv-banner.REJECTED { background: linear-gradient(90deg, #FDEDEF, #FEF7F8); border-color: #F3C3CB; } .rv-banner.REJECTED .ic { background: #D63A52; } .rv-banner.REJECTED .t { color: #B8263E; }
+.st-key-card_review, .st-key-card_email, .st-key-card_actions { background:#fff; border:1px solid var(--line); border-radius: 16px; padding: 16px 18px; margin-bottom: 14px;
+  box-shadow: 0 6px 18px rgba(15,23,42,.04); }
+.rv-h { font-size: 1.15rem; font-weight: 800; color: var(--txt); }
+.rv-found { margin-top: 8px; display:flex; flex-direction: column; gap: 6px; color: #334155; font-size: .95rem; line-height: 1.45; }
+.rv-note { margin-top: 10px; background: #F6F8FC; border-radius: 10px; padding: 10px 12px; color: var(--txt); }
+.st-key-card_review [role="radiogroup"] { gap: 10px; }
+.st-key-card_review [role="radiogroup"] label { border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; background: #fff; }
+.st-key-card_review [role="radiogroup"] label:has(input:checked) { border-color: #2F5BEA; background: #EEF3FF; }
+.z-draft2 { font-size: .72rem; font-weight: 700; background: #F1F4F9; color: var(--muted); border-radius: 999px; padding: 2px 9px; margin-left: 8px; vertical-align: middle; }
+.rv-mail { border:1px solid var(--line); border-radius: 12px; overflow:hidden; margin-top: 10px; }
+.rv-mail .f { display:flex; gap: 14px; padding: 9px 14px; background: #F8FAFE; border-bottom: 1px solid #EDF1F8; font-size: .92rem; color: var(--txt); }
+.rv-mail .f span { width: 60px; color: var(--muted); font-weight: 600; flex: none; }
+.rv-body { border:1px solid var(--line); border-top: 0; border-radius: 0 0 12px 12px; margin-top: -17px; padding: 14px 16px; color: var(--txt);
+           line-height: 1.6; font-size: .95rem; max-height: 300px; overflow: auto; }
+.st-key-card_email iframe { display:block; margin-top: 0; }
+.rv-more { font-size: 1.3rem; font-weight: 800; color: var(--txt); margin: 18px 0 2px; }
+
 /* checks, plain version */
 .z-sectitle { font-weight: 800; font-size: 1.05rem; color: var(--txt); margin: 4px 0 10px; }
 .z-prob { display:flex; gap: 12px; align-items:flex-start; background:#fff; border:1px solid var(--line); border-left: 5px solid #E8963A;
