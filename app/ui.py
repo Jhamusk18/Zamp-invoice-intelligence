@@ -215,6 +215,22 @@ div[data-testid="stChatMessage"] { background: #F7FAFF; border: 1px solid #E3EBF
 .rv-label { font-weight: 700; color: var(--txt); margin: 14px 0 4px; }
 .rv-more { font-size: 1.3rem; font-weight: 800; color: var(--txt); margin: 18px 0 2px; }
 
+/* review page polish (mockup) */
+.rv-h { display:flex; align-items:center; gap: 10px; }
+.rv-h svg { flex: none; }
+.z-draft2 { background: #E8EEFF !important; color: #2F5BEA !important; }
+.rv-banner { position: relative; overflow: hidden; box-shadow: 0 8px 24px rgba(15,23,42,.05); }
+.rv-banner .amt { border-left: 1px solid rgba(15,23,42,.10); padding-left: 26px; margin-left: 18px; align-self: stretch; display:flex; align-items:center; }
+.rv-banner::after { content:""; position:absolute; right:-40px; bottom:-60px; width: 260px; height: 120px; border-radius: 50%; opacity: .45; pointer-events:none; }
+.rv-banner.FLAGGED::after { background: #FAD9A8; } .rv-banner.APPROVED::after { background: #BFE8CF; } .rv-banner.REJECTED::after { background: #F5C2CB; }
+.rv-banner > div { position: relative; z-index: 1; }
+.st-key-card_review [role="radiogroup"] label { border: 1.5px solid #E2E8F2 !important; border-radius: 14px !important; padding: 10px 18px !important; min-width: 150px; }
+.st-key-card_review [role="radiogroup"] label:has(input:checked) { border-color: transparent !important; background: #E6ECFF !important; font-weight: 700; }
+.st-key-pdfpane .stButton > button, .st-key-pdfpane .stDownloadButton > button { background: #fff; border: 1px solid #E2E8F2; box-shadow: 0 2px 6px rgba(15,23,42,.06);
+  min-height: 42px; border-radius: 11px; }
+.st-key-pdfpane .stDownloadButton > button { border-color: #C9D7FB; color: #2F5BEA; }
+.st-key-card_email .stLinkButton a { min-height: 44px; border-radius: 10px; }
+
 /* checks, plain version */
 .z-sectitle { font-weight: 800; font-size: 1.05rem; color: var(--txt); margin: 4px 0 10px; }
 .z-prob { display:flex; gap: 12px; align-items:flex-start; background:#fff; border:1px solid var(--line); border-left: 5px solid #E8963A;

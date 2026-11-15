@@ -32,7 +32,7 @@ name = inv["invoice_number"] or inv["filename"]
 
 fs = q.findings(conn, iid)
 bad = sorted([f for f in fs if f["result"] in ("WARN", "FAIL")], key=lambda f: f["result"] != "FAIL")
-src = "sample history (values known, no AI)" if inv["source"] == "seed" else "uploaded"
+src = "Sample history" if inv["source"] == "seed" else "Uploaded"
 
 GROUP = {"Document": "Document", "Duplicate": "Document", "Vendor": "Vendor & bank", "Purchase order": "Order & goods", "Policy": "Policy"}
 NOT_SHOWN = "not shown on the invoice"
@@ -138,9 +138,11 @@ def check_html(f, with_cmp=True):
 h = st.columns([0.42, 5.2, 1.75, 0.38, 0.62, 0.38], vertical_alignment="center", gap="small")
 if h[0].button("", icon=":material/arrow_back:", key="back", help="Back to History"):
     st.switch_page(st.session_state.pages["history"])
-h[1].markdown(f"<div class='rv-title'>Review invoice</div><div class='z-sub' style='margin:2px 0 0'><b style='color:#0F172A'>{html.escape(name)}</b> · "
+_d = inv["invoice_date"] or ""
+nice_date = f"{int(_d[8:10])} {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][int(_d[5:7]) - 1]} {_d[:4]}" if len(_d) == 10 else "—"
+h[1].markdown(f"<div class='rv-title'>Review Invoice</div><div class='z-sub' style='margin:2px 0 0'><b style='color:#0F172A'>{html.escape(name)}</b> · "
               f"{html.escape(inv['vendor_name'] or 'Unknown vendor')} · {inr(inv['total'], decimals=0) if inv['total'] is not None else '—'} · "
-              f"invoice date {inv['invoice_date'] or '—'}<span class='z-muted'> &nbsp;·&nbsp; {src}"
+              f"{nice_date} · {src}<span class='z-muted'>"
               f"{' · policy v' + str(inv['policy_version']) if inv['policy_version'] else ''}</span></div>", unsafe_allow_html=True)
 with h[2].popover("Ask about this invoice", icon=":material/chat:", use_container_width=True):
     helper_panel.render(conn, iid, "rv", height=300)
@@ -189,12 +191,12 @@ STATUS_ICON = {"APPROVED": "✓", "FLAGGED": "!", "REJECTED": "✕"}
 def copy_button(text, key):
     """Copies text to the clipboard (falls back to execCommand inside the component frame)."""
     import streamlit.components.v1 as components
-    components.html(f"""<style>html,body{{margin:0;padding:0;overflow:hidden}}</style><button id='b' style="width:100%;height:44px;margin:0;border-radius:10px;border:1px solid #D6E1FD;background:#EEF3FF;color:#2449C9;
-      font:600 15px 'Source Sans Pro',sans-serif;cursor:pointer">⧉ Copy draft</button><script>
+    components.html(f"""<style>html,body{{margin:0;padding:0;overflow:hidden}}</style><button id='b' style="width:100%;height:44px;margin:0;border-radius:10px;border:1.5px solid #C9D7FB;background:#fff;color:#2449C9;
+      font:600 15px 'Source Sans Pro',sans-serif;cursor:pointer">⧉  Copy Draft</button><script>
       const t = {json.dumps(text)}; const b = document.getElementById('b');
       b.onclick = async () => {{ try {{ await navigator.clipboard.writeText(t); }} catch (e) {{
         const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); }}
-        b.innerText = '✓ Copied'; setTimeout(() => b.innerText = '⧉ Copy draft', 1800); }};</script>""", height=46)
+        b.innerText = '✓ Copied'; setTimeout(() => b.innerText = '⧉  Copy Draft', 1800); }};</script>""", height=46)
 
 
 with right:
@@ -212,7 +214,7 @@ with right:
     # ---- Review
     found = [short_text(f) for f in bad]
     with st.container(key="card_review"):
-        st.markdown("<div class='rv-h'>✎ Review</div>", unsafe_allow_html=True)
+        st.markdown("<div class='rv-h'><svg viewBox='0 0 24 24' width='24' height='24' fill='none' stroke='#2F5BEA' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M4 20h4L19 9l-4-4L4 16v4z'/><path d='M13.5 6.5l4 4'/></svg><span>Review</span></div>", unsafe_allow_html=True)
         choice, reason = None, None
         if not acts:
             st.markdown("<div class='rv-found'>" + ("".join(f"<div>{'⛔' if f['result'] == 'FAIL' else '⚠️'} {html.escape(short_text(f))}</div>" for f in bad)
@@ -247,16 +249,16 @@ with right:
         e_action = None
     if e_action is None:
         with st.container(key="card_email"):
-            st.markdown("<div class='rv-h'>✉ Email to Vendor</div><div class='z-muted' style='margin-top:6px'>Pick <b>Ready to Pay</b> or <b>Reject</b> above "
+            st.markdown("<div class='rv-h'><svg viewBox='0 0 24 24' width='26' height='26' fill='none' stroke='#2F5BEA' stroke-width='1.9' stroke-linejoin='round'><rect x='3' y='5' width='18' height='14' rx='2.5'/><path d='M3.5 6.5l8.5 6.5 8.5-6.5'/></svg><span>Email to Vendor</span></div><div class='z-muted' style='margin-top:6px'>Pick <b>Ready to Pay</b> or <b>Reject</b> above "
                         "and a ready-to-send email for the vendor appears here.</div>", unsafe_allow_html=True)
     else:
         e = explain.reviewer_email(conn, iid, e_action, e_reason)
     if e_action:
         with st.container(key="card_email"):
             hh = st.columns([3, 1.2], vertical_alignment="center")
-            hh[0].markdown("<div class='rv-h'>✉ Email to Vendor <span class='z-draft2'>Draft · not sent</span></div>", unsafe_allow_html=True)
+            hh[0].markdown("<div class='rv-h'><svg viewBox='0 0 24 24' width='26' height='26' fill='none' stroke='#2F5BEA' stroke-width='1.9' stroke-linejoin='round'><rect x='3' y='5' width='18' height='14' rx='2.5'/><path d='M3.5 6.5l8.5 6.5 8.5-6.5'/></svg><span>Email to Vendor</span><span class='z-draft2'>Draft · not sent</span></div>", unsafe_allow_html=True)
             ek = f"edit_{iid}"
-            if hh[1].button("Done" if st.session_state.get(ek) else "Edit draft", icon=":material/edit:", key=f"ebtn_{iid}", use_container_width=True):
+            if hh[1].button("Done" if st.session_state.get(ek) else "Edit Draft", icon=":material/edit:", key=f"ebtn_{iid}", use_container_width=True):
                 st.session_state[ek] = not st.session_state.get(ek)
                 st.rerun()
             st.markdown(f"<div class='rv-mail'><div class='f'><span>To</span>{html.escape(e['to'])}</div>"
@@ -271,7 +273,7 @@ with right:
             with bb[0]:
                 copy_button(f"To: {e['to']}\nSubject: {e['subject']}\n\n{body}", f"cp_{iid}")
             if "@" in e["to"]:
-                bb[1].link_button("Open in email app", f"mailto:{e['to']}?subject={quote(e['subject'])}&body={quote(body)}", type="primary",
+                bb[1].link_button("Open in Email App", f"mailto:{e['to']}?subject={quote(e['subject'])}&body={quote(body)}", type="primary",
                                   icon=":material/send:", use_container_width=True)
 
     # ---- Actions
