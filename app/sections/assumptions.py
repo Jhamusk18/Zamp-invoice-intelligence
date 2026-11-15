@@ -41,8 +41,9 @@ def render():
             "Hidden-text detection works on text PDFs only (a scan has no text layer to hide text in). It flags text the same colour as its background, under 3 pt, or off the page; tested on this project's PDFs, not on a large set of real ones.",
             "If the server has no OCR engine, scans are still read by the AI but every value is marked 'not verified', so they always go to a person.",
             "Money is handled as rupees rounded to 2 decimals, with small tolerances in comparisons; integer paise would be the production choice.",
-            f"AI: Google Gemini free tier ({m['primary']}, second read {m['retry']}). Free-tier rate limits apply, and Google may use "
-            "free-tier inputs to improve its products - fine for sample data, not for real invoices.",
+            f"AI: Google Gemini free tier ({m['primary']}, second read {m['retry']}). If Google is down, the backup is Groq "
+            f"({llm.groq_models()['text']}, scans {llm.groq_models()['vision']}), used only when a key is set. Free-tier rate limits apply, and these providers may use "
+            "free-tier inputs to improve their products - fine for sample data, not for real invoices.",
             "Phone verification of bank changes is a manual step; recording it in the app is planned, not built.",
             "What-if analysis re-checks each invoice against invoices processed before it, using today's PO money state.",
         ],

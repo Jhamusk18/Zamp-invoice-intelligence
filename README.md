@@ -18,6 +18,8 @@ cp .streamlit/secrets.toml.example .streamlit/secrets.toml   # then paste your G
 streamlit run app/streamlit_app.py
 ```
 
+AI order: Gemini (primary, then its second model). If Google is down, Groq is the backup, used only when `GROQ_API_KEY` is set.
+
 The sample database builds itself on first start. **Profile → Reset demo data** rebuilds it.
 Regenerate the sample PDFs with `python scripts/make_sample_invoices.py` (writes both folders). Run tests with `pytest -q`.
 

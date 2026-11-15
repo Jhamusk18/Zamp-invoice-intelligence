@@ -30,7 +30,7 @@ left, right = st.columns([1.55, 1], gap="large")
 
 with left:
     if not llm.available():
-        st.warning("AI reading isn't set up on this server yet: add **GEMINI_API_KEY** in the app's **Settings → Secrets**. Until then, new uploads stop at **Text Extracted**.", icon="🔑")
+        st.warning("AI reading isn't set up on this server yet: add **GEMINI_API_KEY** (and optionally **GROQ_API_KEY** as a backup) in the app's **Settings → Secrets**. Until then, new uploads stop at **Text Extracted**.", icon="🔑")
 
     # ---- "already processed" -> neutral banner with a way to the earlier result
     if st.session_state.get("seen_id") == iid and inv:
